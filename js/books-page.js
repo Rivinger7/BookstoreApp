@@ -558,10 +558,21 @@ class BooksPageManager {
 
     changeItemsPerPage() {
         const select = document.getElementById('itemsPerPage');
-        this.itemsPerPage = parseInt(select.value);
-        this.currentPage = 1;
+        if (!select) {
+            console.error('itemsPerPage select element not found');
+            return;
+        }
         
-        console.log('changeItemsPerPage called, new itemsPerPage:', this.itemsPerPage);
+        const newItemsPerPage = parseInt(select.value);
+        console.log('changeItemsPerPage called:', {
+            oldItemsPerPage: this.itemsPerPage,
+            newItemsPerPage: newItemsPerPage,
+            selectValue: select.value
+        });
+        
+        this.itemsPerPage = newItemsPerPage;
+        this.currentPage = 1; // Reset về trang 1 khi thay đổi pageSize
+        
         // Gọi lại loadBooks() để lấy data từ API với pageSize mới
         this.loadBooks();
     }
