@@ -40,6 +40,9 @@
                     <li class="nav-item" data-section="books">
                         <a href="#"><i class="fas fa-book"></i> Quản lý sách</a>
                     </li>
+                    <li class="nav-item" data-section="categories">
+                        <a href="#"><i class="fas fa-tags"></i> Quản lý thể loại</a>
+                    </li>
                     <li class="nav-item" data-section="users">
                         <a href="#"><i class="fas fa-users"></i> Quản lý người dùng</a>
                     </li>
@@ -173,6 +176,44 @@
                 </div>
 
                 <div class="pagination" id="booksPagination">
+                    <!-- Pagination will be generated here -->
+                </div>
+            </section>
+
+            <!-- Categories Management Section -->
+            <section class="admin-section" id="categories">
+                <div class="section-header">
+                    <h1>Quản lý thể loại</h1>
+                    <button class="btn btn-primary" onclick="showAddCategoryModal()">
+                        <i class="fas fa-plus"></i> Thêm thể loại mới
+                    </button>
+                </div>
+
+                <div class="table-controls">
+                    <div class="search-box">
+                        <input type="text" placeholder="Tìm kiếm thể loại..." id="categorySearchInput">
+                        <button class="btn btn-outline" onclick="searchCategoriesAdmin()">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Tên thể loại</th>
+                                <th>Số lượng sách</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoriesTableBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination" id="categoriesPagination">
                     <!-- Pagination will be generated here -->
                 </div>
             </section>
@@ -462,7 +503,26 @@
                     <button type="submit" class="btn btn-primary">Lưu</button>
                 </div>
             </form>
-        </div>    </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Category Modal -->
+    <div class="modal" id="categoryFormModal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('categoryFormModal')">&times;</span>
+            <h2 id="categoryFormTitle">Thêm thể loại mới</h2>
+            <form id="categoryForm">
+                <div class="form-group">
+                    <label for="categoryName">Tên thể loại <span class="required">*</span></label>
+                    <input type="text" id="categoryName" required placeholder="Nhập tên thể loại...">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('categoryFormModal')">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>

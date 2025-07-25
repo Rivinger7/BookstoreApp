@@ -6,7 +6,8 @@ class AdminManager {
         this.currentPage = {
             books: 1,
             users: 1,
-            borrowings: 1
+            borrowings: 1,
+            categories: 1
         };
         this.pageSize = 10;
         this.init();
@@ -56,6 +57,12 @@ class AdminManager {
             bookForm.addEventListener('submit', this.handleBookSubmit.bind(this));
         }
 
+        // Category form
+        const categoryForm = document.getElementById('categoryForm');
+        if (categoryForm) {
+            categoryForm.addEventListener('submit', this.handleCategorySubmit.bind(this));
+        }
+
         // Search inputs
         this.setupSearchInputs();
 
@@ -67,7 +74,8 @@ class AdminManager {
         const searchInputs = [
             { id: 'bookSearchInput', handler: this.searchBooksAdmin.bind(this) },
             { id: 'userSearchInput', handler: this.searchUsersAdmin.bind(this) },
-            { id: 'borrowingSearchInput', handler: this.searchBorrowingsAdmin.bind(this) }
+            { id: 'borrowingSearchInput', handler: this.searchBorrowingsAdmin.bind(this) },
+            { id: 'categorySearchInput', handler: this.searchCategoriesAdmin.bind(this) }
         ];
 
         searchInputs.forEach(({ id, handler }) => {
@@ -121,6 +129,9 @@ class AdminManager {
                 break;
             case 'books':
                 this.loadBooksData();
+                break;
+            case 'categories':
+                this.loadCategoriesData();
                 break;
             case 'users':
                 this.loadUsersData();
@@ -344,6 +355,63 @@ class AdminManager {
         `).join('');
 
         tbody.innerHTML = booksHTML;
+    }
+
+    async loadCategoriesData() {
+        try {
+            this.showLoading();
+            
+            const searchTerm = document.getElementById('categorySearchInput')?.value || '';
+            const result = await this.api.getCategories();
+            
+            if (result.success) {
+                let categories = result.categories || [];
+                
+                // Filter by search term if provided
+                if (searchTerm) {
+                    categories = categories.filter(category => 
+                        category.name.toLowerCase().includes(searchTerm.toLowerCase())
+                    );
+                }
+                
+                this.renderCategoriesTable(categories);
+                console.log('Categories loaded successfully:', categories.length);
+            } else {
+                throw new Error(result.message || 'Failed to load categories');
+            }
+        } catch (error) {
+            console.error('Error loading categories:', error);
+            this.showAlert('Lỗi khi tải danh sách thể loại: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    renderCategoriesTable(categories) {
+        const tbody = document.getElementById('categoriesTableBody');
+        if (!tbody) return;
+
+        console.log('Rendering categories table:', categories);
+
+        const categoriesHTML = categories.map(category => `
+            <tr>
+                <td>${category.id}</td>
+                <td>${category.name}</td>
+                <td>-</td>
+                <td>
+                    <div class="table-actions">
+                        <button class="btn btn-sm btn-outline" onclick="editCategory('${category.id}')" title="Sửa">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteCategory('${category.id}')" title="Xóa">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+
+        tbody.innerHTML = categoriesHTML;
     }
 
     async loadUsersData() {
@@ -630,6 +698,63 @@ class AdminManager {
         }
     }
 
+    async editCategory(categoryId) {
+        try {
+            this.showLoading();
+            
+            const result = await this.api.getCategoryById(categoryId);
+            
+            if (result.success && result.category) {
+                const category = result.category;
+                
+                // Điền thông tin vào form
+                document.getElementById('categoryName').value = category.name;
+                
+                // Set edit mode
+                const form = document.getElementById('categoryForm');
+                form.dataset.editId = categoryId;
+                
+                // Change modal title
+                document.getElementById('categoryFormTitle').textContent = 'Chỉnh sửa thể loại';
+                
+                // Show modal
+                document.getElementById('categoryFormModal').style.display = 'block';
+            } else {
+                throw new Error(result.message || 'Không thể tải thông tin thể loại');
+            }
+            
+        } catch (error) {
+            console.error('Edit category error:', error);
+            this.showAlert('Không thể tải thông tin thể loại: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    async deleteCategory(categoryId) {
+        if (confirm('Bạn có chắc chắn muốn xóa thể loại này? Lưu ý: Các sách thuộc thể loại này sẽ cần được cập nhật thể loại khác.')) {
+            try {
+                this.showLoading();
+                
+                await this.api.deleteCategory(categoryId);
+                
+                this.showAlert('Xóa thể loại thành công', 'success');
+                
+                // Reload danh sách categories
+                await this.loadCategoriesData();
+                
+                // Reload categories cho dropdown
+                await this.loadCategories();
+                
+            } catch (error) {
+                console.error('Delete category error:', error);
+                this.showAlert('Không thể xóa thể loại: ' + error.message, 'error');
+            } finally {
+                this.hideLoading();
+            }
+        }
+    }
+
     closeModal(modalId) {
         if (modalId) {
             const modal = document.getElementById(modalId);
@@ -663,6 +788,13 @@ class AdminManager {
         console.log('Search borrowings:', searchTerm);
         // TODO: Implement search functionality
         this.loadBorrowingsData();
+    }
+
+    searchCategoriesAdmin() {
+        const searchInput = document.getElementById('categorySearchInput');
+        const searchTerm = searchInput ? searchInput.value.trim() : '';
+        console.log('Search categories:', searchTerm);
+        this.loadCategoriesData();
     }
 
     // Pagination and UI methods
@@ -768,6 +900,57 @@ class AdminManager {
         } catch (error) {
             console.error('Book operation error:', error);
             this.showAlert(error.message || `Không thể ${editId ? 'cập nhật' : 'thêm'} sách`, 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    async handleCategorySubmit(e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const editId = form.dataset.editId; // Kiểm tra xem có đang edit không
+        
+        const formData = {
+            name: document.getElementById('categoryName').value.trim()
+        };
+
+        // Validation
+        if (!formData.name) {
+            this.showAlert('Vui lòng nhập tên thể loại', 'error');
+            return;
+        }
+
+        try {
+            this.showLoading();
+            
+            let result;
+            if (editId) {
+                // Cập nhật category
+                result = await this.api.updateCategory(editId, formData);
+                this.showAlert('Cập nhật thể loại thành công!', 'success');
+            } else {
+                // Thêm category mới
+                result = await this.api.createCategory(formData);
+                this.showAlert('Thêm thể loại thành công!', 'success');
+            }
+            
+            console.log('Category operation result:', result);
+            
+            // Đóng modal và reset form
+            this.closeModal('categoryFormModal');
+            form.reset();
+            delete form.dataset.editId; // Xóa edit ID
+            
+            // Reload danh sách categories
+            await this.loadCategoriesData();
+            
+            // Reload categories cho dropdown
+            await this.loadCategories();
+            
+        } catch (error) {
+            console.error('Category operation error:', error);
+            this.showAlert(error.message || `Không thể ${editId ? 'cập nhật' : 'thêm'} thể loại`, 'error');
         } finally {
             this.hideLoading();
         }
@@ -1363,6 +1546,9 @@ function changePage(type, page) {
         case 'books':
             window.adminManager.loadBooksData();
             break;
+        case 'categories':
+            window.adminManager.loadCategoriesData();
+            break;
         case 'users':
             window.adminManager.loadUsersData();
             break;
@@ -1443,6 +1629,12 @@ function searchBorrowingsAdmin() {
     }
 }
 
+function searchCategoriesAdmin() {
+    if (window.adminManager) {
+        window.adminManager.searchCategoriesAdmin();
+    }
+}
+
 // Additional global functions
 function closeModal(modalId) {
     if (modalId) {
@@ -1508,5 +1700,33 @@ function searchCustomer() {
 function searchBook() {
     if (window.adminManager) {
         window.adminManager.searchBook();
+    }
+}
+
+// Global functions for category management
+function showAddCategoryModal() {
+    if (window.adminManager) {
+        const modal = document.getElementById('categoryFormModal');
+        const form = document.getElementById('categoryForm');
+        const title = document.getElementById('categoryFormTitle');
+        
+        if (modal && form && title) {
+            title.textContent = 'Thêm thể loại mới';
+            form.reset();
+            delete form.dataset.editId;
+            modal.style.display = 'block';
+        }
+    }
+}
+
+function editCategory(categoryId) {
+    if (window.adminManager) {
+        window.adminManager.editCategory(categoryId);
+    }
+}
+
+function deleteCategory(categoryId) {
+    if (window.adminManager) {
+        window.adminManager.deleteCategory(categoryId);
     }
 }
