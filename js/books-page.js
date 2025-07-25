@@ -151,49 +151,56 @@ class BooksPageManager {
         try {
             this.showLoading();
             
-            // Chỉ gửi page và limit lên backend - filtering sẽ làm ở frontend
+            // Gửi thông tin filter hiện tại lên backend để xử lý phân trang đúng
             const params = {
                 page: this.currentPage,
-                pageSize: this.itemsPerPage
+                pageSize: this.itemsPerPage,
+                // Thêm filter params nếu có
+                title: this.currentFilters.title,
+                author: this.currentFilters.author,
+                isbn: this.currentFilters.isbn,
+                category: this.currentFilters.category,
+                status: this.currentFilters.status,
+                sort: this.currentFilters.sort
             };
 
             console.log('Loading books with params:', params);
 
             // Sử dụng API thực tế
             let result;
-            let allBooks = [];
             try {
                 result = await api.getBooks(params);
                 console.log('Books result from API:', result);
                 
-                // Xử lý response từ API thực tế
-                if (result && Array.isArray(result)) {
-                    this.allBooks = result;
-                } else if (result && result.books) {
-                    this.allBooks = result.books;
-                } else if (result && result.data) {
-                    this.allBooks = Array.isArray(result.data) ? result.data : result.data.books || [];
+                // Xử lý response từ API thực tế với totalCount
+                if (result && result.success && result.books) {
+                    this.books = result.books; // Sách cho trang hiện tại
+                    this.totalItems = result.totalCount || 0; // Tổng số sách từ API
+                    this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
+                    console.log('API data loaded:', {
+                        booksCount: this.books.length,
+                        totalItems: this.totalItems,
+                        totalPages: this.totalPages
+                    });
+                } else if (result && Array.isArray(result)) {
+                    // Fallback nếu API trả về array trực tiếp
+                    this.books = result;
+                    this.totalItems = result.length;
+                    this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
                 } else {
-                    this.allBooks = [];
+                    throw new Error('Invalid API response format');
                 }
             } catch (error) {
                 console.warn('API failed, using mock data:', error);
+                // Fallback to frontend filtering với mock data
                 result = await this.getMockBooksData(params);
                 this.allBooks = result.books || [];
+                this.applyFiltersAndPagination();
                 console.log('Mock data loaded:', this.allBooks.length, 'books');
+                return; // Exit early để không duplicate rendering
             }
             
-            // Fallback nếu không có data
-            if (!this.allBooks || this.allBooks.length === 0) {
-                console.log('No books found, using fallback data');
-                this.allBooks = this.getFallbackBooks();
-            }
-            
-            console.log('Total books loaded:', this.allBooks.length);
-            
-            // Áp dụng filter và pagination ở frontend
-            this.applyFiltersAndPagination();
-            
+            // Render books từ API
             this.renderBooks();
             this.renderPagination();
             this.updateResultsInfo();
@@ -325,7 +332,8 @@ class BooksPageManager {
         console.log('performAdvancedSearch called');
         console.log('Search filters set:', this.currentFilters);
         
-        this.applyFiltersAndPagination(); // Chỉ áp dụng filter, không reload API
+        // Gọi lại loadBooks() để lấy data từ API với search filters mới
+        this.loadBooks();
     }
 
     applyFilters() {
@@ -339,7 +347,8 @@ class BooksPageManager {
         console.log('Category filter value:', this.currentFilters.category);
         console.log('All current filters:', this.currentFilters);
         
-        this.applyFiltersAndPagination(); // Chỉ áp dụng filter, không reload API
+        // Gọi lại loadBooks() để lấy data từ API với filters mới
+        this.loadBooks();
     }
 
     applyFrontendFilters(books) {
@@ -524,8 +533,8 @@ class BooksPageManager {
         this.currentPage = 1;
         
         console.log('clearAllFilters called, applying filters with empty criteria');
-        // Chỉ áp dụng filter, không reload API data
-        this.applyFiltersAndPagination();
+        // Gọi lại loadBooks() để lấy data từ API với filters rỗng
+        this.loadBooks();
     }
 
     changeView(view) {
@@ -553,8 +562,8 @@ class BooksPageManager {
         this.currentPage = 1;
         
         console.log('changeItemsPerPage called, new itemsPerPage:', this.itemsPerPage);
-        // Chỉ áp dụng lại pagination, không reload API data
-        this.applyFiltersAndPagination();
+        // Gọi lại loadBooks() để lấy data từ API với pageSize mới
+        this.loadBooks();
     }
 
     renderPagination() {
@@ -648,7 +657,8 @@ class BooksPageManager {
     goToPage(page) {
         if (page >= 1 && page <= this.totalPages) {
             this.currentPage = page;
-            this.applyFiltersAndPagination(); // Chỉ áp dụng pagination, không reload API
+            // Gọi lại loadBooks() để lấy data từ API cho trang mới
+            this.loadBooks();
         }
     }
 
