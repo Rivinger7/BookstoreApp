@@ -108,15 +108,10 @@ class BooksManager {
                         <span class="status-badge ${book.quantity > 0 ? 'status-available' : 'status-borrowed'}">
                             ${book.quantity > 0 ? 'Có sẵn' : 'Hết sách'}
                         </span>
-                        ${book.quantity > 0 ? `
-                            <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); borrowBook('${book.id}')">
-                                Mượn sách
-                            </button>
-                        ` : `
-                            <button class="btn btn-outline btn-sm" disabled>
-                                Hết sách
-                            </button>
-                        `}
+                        <div class="borrow-info">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Đến cửa hàng để mượn sách</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -327,15 +322,12 @@ class BooksManager {
                             </div>
                         </div>
                     </div>
-                    ${book.quantity > 0 ? `
-                        <button class="btn btn-primary" onclick="borrowBook('${book.id}'); closeModal('bookModal');">
-                            <i class="fas fa-book-reader"></i> Mượn sách
-                        </button>
-                    ` : `
-                        <button class="btn btn-outline" disabled>
-                            <i class="fas fa-ban"></i> Hết sách
-                        </button>
-                    `}
+                    <div class="borrow-notice">
+                        <i class="fas fa-store"></i>
+                        <span>Để mượn sách, vui lòng đến cửa hàng trực tiếp</span>
+                        <br>
+                        <small>Nhân viên sẽ hỗ trợ bạn trong việc mượn sách</small>
+                    </div>
                 </div>
             
         `;

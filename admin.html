@@ -43,6 +43,9 @@
                     <li class="nav-item" data-section="users">
                         <a href="#"><i class="fas fa-users"></i> Quản lý người dùng</a>
                     </li>
+                    <li class="nav-item" data-section="create-borrowing">
+                        <a href="#"><i class="fas fa-plus-circle"></i> Tạo giao dịch mượn</a>
+                    </li>
                     <li class="nav-item" data-section="borrowings">
                         <a href="#"><i class="fas fa-exchange-alt"></i> Mượn trả sách</a>
                     </li>
@@ -210,6 +213,102 @@
 
                 <div class="pagination" id="usersPagination">
                     <!-- Pagination will be generated here -->
+                </div>
+            </section>
+
+            <!-- Create Borrowing Section -->
+            <section class="admin-section" id="create-borrowing">
+                <div class="section-header">
+                    <h1>Tạo giao dịch mượn sách</h1>
+                    <p>Tạo giao dịch mượn sách cho khách hàng đến cửa hàng</p>
+                </div>
+
+                <div class="create-borrowing-container">
+                    <form id="createBorrowingForm" class="borrowing-form">
+                        <div class="form-section">
+                            <h3>Thông tin khách hàng</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Tìm khách hàng <span class="required">*</span></label>
+                                    <div class="search-customer">
+                                        <input type="text" id="customerSearch" placeholder="Nhập email hoặc tên khách hàng..." required>
+                                        <button type="button" class="btn btn-outline" onclick="searchCustomer()">
+                                            <i class="fas fa-search"></i> Tìm
+                                        </button>
+                                    </div>
+                                    <div id="customerResults" class="customer-results"></div>
+                                </div>
+                            </div>
+                            <div class="selected-customer" id="selectedCustomer" style="display: none;">
+                                <h4>Khách hàng đã chọn:</h4>
+                                <div class="customer-info">
+                                    <p><strong>Họ tên:</strong> <span id="selectedCustomerName"></span></p>
+                                    <p><strong>Email:</strong> <span id="selectedCustomerEmail"></span></p>
+                                    <p><strong>Số sách đang mượn:</strong> <span id="selectedCustomerBooksCount">0</span></p>
+                                </div>
+                                <input type="hidden" id="selectedCustomerId">
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>Thông tin sách</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Tìm sách <span class="required">*</span></label>
+                                    <div class="search-book">
+                                        <input type="text" id="bookSearch" placeholder="Nhập tên sách, tác giả hoặc ISBN..." required>
+                                        <button type="button" class="btn btn-outline" onclick="searchBook()">
+                                            <i class="fas fa-search"></i> Tìm
+                                        </button>
+                                    </div>
+                                    <div id="bookResults" class="book-results"></div>
+                                </div>
+                            </div>
+                            <div class="selected-book" id="selectedBook" style="display: none;">
+                                <h4>Sách đã chọn:</h4>
+                                <div class="book-info">
+                                    <img id="selectedBookImage" src="" alt="" class="book-thumbnail">
+                                    <div class="book-details">
+                                        <p><strong>Tên sách:</strong> <span id="selectedBookTitle"></span></p>
+                                        <p><strong>Tác giả:</strong> <span id="selectedBookAuthor"></span></p>
+                                        <p><strong>ISBN:</strong> <span id="selectedBookISBN"></span></p>
+                                        <p><strong>Số lượng có sẵn:</strong> <span id="selectedBookQuantity"></span></p>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="selectedBookId">
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>Thông tin mượn sách</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Số ngày mượn (tối đa) <span class="required">*</span></label>
+                                    <input type="number" id="borrowDays" min="1" max="30" value="14" required>
+                                    <small>Nhập số ngày khách hàng sẽ mượn sách (tối đa 30 ngày)</small>
+                                </div>
+                                <div class="form-group">
+                                    <label>Ngày trả dự kiến</label>
+                                    <input type="date" id="expectedReturnDate" readonly>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Ghi chú</label>
+                                    <textarea id="borrowNotes" rows="3" placeholder="Ghi chú thêm về giao dịch mượn sách..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-outline" onclick="resetBorrowingForm()">
+                                <i class="fas fa-times"></i> Hủy
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus-circle"></i> Tạo giao dịch mượn
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </section>
 

@@ -373,6 +373,38 @@ class API {
         }
     }
 
+    async createBorrowing(borrowingData) {
+        try {
+            const response = await fetch(`${this.BOOK_BASE_URL}/borrowings`, {
+                method: 'POST',
+                headers: this.getHeaders(),
+                body: JSON.stringify(borrowingData)
+            });
+            
+            return await this.handleResponse(response);
+        } catch (error) {
+            console.error('Create borrowing error:', error);
+            throw error;
+        }
+    }
+
+    async searchUsers(params = {}) {
+        try {
+            const queryString = new URLSearchParams(params).toString();
+            const url = `${this.AUTH_BASE_URL}/users/search${queryString ? '?' + queryString : ''}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: this.getHeaders()
+            });
+            
+            return await this.handleResponse(response);
+        } catch (error) {
+            console.error('Search users error:', error);
+            throw error;
+        }
+    }
+
     // USERS API Templates (Admin only)
     async getUsers(params = {}) {
         try {

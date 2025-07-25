@@ -18,9 +18,10 @@ class AdminManager {
         this.loadCategories();
         this.loadDashboardData();
         this.showSection('dashboard');
+        this.initCreateBorrowingForm();
     }
 
-    
+
     checkAdminAuth() {
         const currentUserData = localStorage.getItem('currentUser');
         const user = currentUserData ? JSON.parse(currentUserData) : {};
@@ -123,6 +124,9 @@ class AdminManager {
                 break;
             case 'users':
                 this.loadUsersData();
+                break;
+            case 'create-borrowing':
+                this.initCreateBorrowingForm();
                 break;
             case 'borrowings':
                 this.loadBorrowingsData();
@@ -1026,6 +1030,301 @@ class AdminManager {
             }, 1000);
         });
     }
+
+    // Create Borrowing Management
+    initCreateBorrowingForm() {
+        // Setup form handlers
+        const form = document.getElementById('createBorrowingForm');
+        if (form) {
+            form.addEventListener('submit', this.handleCreateBorrowing.bind(this));
+        }
+        
+        // Setup borrow days change listener
+        const borrowDaysInput = document.getElementById('borrowDays');
+        if (borrowDaysInput) {
+            borrowDaysInput.addEventListener('change', this.updateExpectedReturnDate.bind(this));
+            // Set initial date
+            this.updateExpectedReturnDate();
+        }
+        
+        // Reset form
+        this.resetBorrowingForm();
+    }
+
+    async searchCustomer() {
+        const searchInput = document.getElementById('customerSearch');
+        const resultsDiv = document.getElementById('customerResults');
+        
+        if (!searchInput || !resultsDiv) return;
+        
+        const searchTerm = searchInput.value.trim();
+        if (!searchTerm) {
+            resultsDiv.innerHTML = '';
+            return;
+        }
+        
+        try {
+            // Call API to search customers
+            const result = await this.api.searchUsers({ search: searchTerm });
+            let customers = [];
+            
+            if (result && result.users) {
+                customers = result.users;
+            } else if (result && Array.isArray(result)) {
+                customers = result;
+            } else {
+                // Fallback mock data
+                customers = [
+                    {
+                        id: '1',
+                        name: 'Nguyễn Văn A',
+                        email: 'nguyenvana@email.com',
+                        borrowedBooksCount: 2
+                    },
+                    {
+                        id: '2', 
+                        name: 'Trần Thị B',
+                        email: 'tranthib@email.com',
+                        borrowedBooksCount: 0
+                    }
+                ].filter(customer => 
+                    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    customer.email.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+            }
+            
+            this.renderCustomerResults(customers);
+            
+        } catch (error) {
+            console.error('Search customer error:', error);
+            this.showAlert('Không thể tìm kiếm khách hàng', 'error');
+            resultsDiv.innerHTML = '<p class="error">Không thể tìm kiếm khách hàng</p>';
+        }
+    }
+
+    renderCustomerResults(customers) {
+        const resultsDiv = document.getElementById('customerResults');
+        if (!resultsDiv) return;
+        
+        if (customers.length === 0) {
+            resultsDiv.innerHTML = '<p class="no-results">Không tìm thấy khách hàng nào</p>';
+            return;
+        }
+        
+        const resultsHTML = customers.map(customer => `
+            <div class="customer-result" onclick="window.adminManager.selectCustomer('${customer.id}', '${customer.name}', '${customer.email}', ${customer.borrowedBooksCount || 0})">
+                <div class="customer-info">
+                    <strong>${customer.name}</strong>
+                    <p>${customer.email}</p>
+                    <small>Đang mượn: ${customer.borrowedBooksCount || 0} sách</small>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline">Chọn</button>
+            </div>
+        `).join('');
+        
+        resultsDiv.innerHTML = resultsHTML;
+    }
+
+    selectCustomer(id, name, email, borrowedCount) {
+        // Hide search results
+        document.getElementById('customerResults').innerHTML = '';
+        
+        // Show selected customer
+        document.getElementById('selectedCustomer').style.display = 'block';
+        document.getElementById('selectedCustomerId').value = id;
+        document.getElementById('selectedCustomerName').textContent = name;
+        document.getElementById('selectedCustomerEmail').textContent = email;
+        document.getElementById('selectedCustomerBooksCount').textContent = borrowedCount;
+        
+        // Clear search input
+        document.getElementById('customerSearch').value = '';
+    }
+
+    async searchBook() {
+        const searchInput = document.getElementById('bookSearch');
+        const resultsDiv = document.getElementById('bookResults');
+        
+        if (!searchInput || !resultsDiv) return;
+        
+        const searchTerm = searchInput.value.trim();
+        if (!searchTerm) {
+            resultsDiv.innerHTML = '';
+            return;
+        }
+        
+        try {
+            // Call API to search books
+            const result = await this.api.getBooks({ search: searchTerm, pageSize: 10 });
+            let books = [];
+            
+            if (result && result.books) {
+                books = result.books;
+            } else if (result && Array.isArray(result)) {
+                books = result;
+            } else {
+                // Fallback mock data
+                books = [
+                    {
+                        id: '1',
+                        title: 'Tôi thấy hoa vàng trên cỏ xanh',
+                        author: 'Nguyễn Nhật Ánh',
+                        isbn: '978-604-2-01234-5',
+                        quantity: 5,
+                        image: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=280&h=320&fit=crop'
+                    }
+                ].filter(book => 
+                    book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    book.isbn.includes(searchTerm)
+                );
+            }
+            
+            // Only show available books
+            books = books.filter(book => book.quantity > 0);
+            
+            this.renderBookResults(books);
+            
+        } catch (error) {
+            console.error('Search book error:', error);
+            this.showAlert('Không thể tìm kiếm sách', 'error');
+            resultsDiv.innerHTML = '<p class="error">Không thể tìm kiếm sách</p>';
+        }
+    }
+
+    renderBookResults(books) {
+        const resultsDiv = document.getElementById('bookResults');
+        if (!resultsDiv) return;
+        
+        if (books.length === 0) {
+            resultsDiv.innerHTML = '<p class="no-results">Không tìm thấy sách có sẵn nào</p>';
+            return;
+        }
+        
+        const resultsHTML = books.map(book => `
+            <div class="book-result" onclick="window.adminManager.selectBook('${book.id}', '${book.title}', '${book.author}', '${book.isbn}', ${book.quantity}, '${book.image || ''}')">
+                <img src="${book.image || 'https://via.placeholder.com/50x60?text=No+Image'}" alt="${book.title}" class="book-result-image">
+                <div class="book-info">
+                    <strong>${book.title}</strong>
+                    <p>${book.author}</p>
+                    <p>ISBN: ${book.isbn}</p>
+                    <small>Có sẵn: ${book.quantity} cuốn</small>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline">Chọn</button>
+            </div>
+        `).join('');
+        
+        resultsDiv.innerHTML = resultsHTML;
+    }
+
+    selectBook(id, title, author, isbn, quantity, image) {
+        // Hide search results
+        document.getElementById('bookResults').innerHTML = '';
+        
+        // Show selected book
+        document.getElementById('selectedBook').style.display = 'block';
+        document.getElementById('selectedBookId').value = id;
+        document.getElementById('selectedBookTitle').textContent = title;
+        document.getElementById('selectedBookAuthor').textContent = author;
+        document.getElementById('selectedBookISBN').textContent = isbn;
+        document.getElementById('selectedBookQuantity').textContent = quantity;
+        document.getElementById('selectedBookImage').src = image || 'https://via.placeholder.com/80x100?text=No+Image';
+        
+        // Clear search input
+        document.getElementById('bookSearch').value = '';
+    }
+
+    updateExpectedReturnDate() {
+        const borrowDaysInput = document.getElementById('borrowDays');
+        const expectedDateInput = document.getElementById('expectedReturnDate');
+        
+        if (!borrowDaysInput || !expectedDateInput) return;
+        
+        const borrowDays = parseInt(borrowDaysInput.value) || 14;
+        const today = new Date();
+        const expectedDate = new Date(today.getTime() + borrowDays * 24 * 60 * 60 * 1000);
+        
+        expectedDateInput.value = expectedDate.toISOString().split('T')[0];
+    }
+
+    async handleCreateBorrowing(event) {
+        event.preventDefault();
+        
+        const customerId = document.getElementById('selectedCustomerId').value;
+        const bookId = document.getElementById('selectedBookId').value;
+        const borrowDays = parseInt(document.getElementById('borrowDays').value);
+        const notes = document.getElementById('borrowNotes').value;
+        
+        if (!customerId) {
+            this.showAlert('Vui lòng chọn khách hàng', 'warning');
+            return;
+        }
+        
+        if (!bookId) {
+            this.showAlert('Vui lòng chọn sách', 'warning');
+            return;
+        }
+        
+        if (!borrowDays || borrowDays < 1 || borrowDays > 30) {
+            this.showAlert('Số ngày mượn phải từ 1 đến 30 ngày', 'warning');
+            return;
+        }
+        
+        try {
+            const borrowingData = {
+                userId: customerId,
+                bookId: bookId,
+                borrowDays: borrowDays,
+                notes: notes,
+                expectedReturnDate: document.getElementById('expectedReturnDate').value
+            };
+            
+            // Call API to create borrowing
+            const result = await this.api.createBorrowing(borrowingData);
+            
+            if (result && result.success) {
+                this.showAlert('Tạo giao dịch mượn sách thành công!', 'success');
+                this.resetBorrowingForm();
+                
+                // Optionally refresh borrowings list
+                if (this.currentSection === 'borrowings') {
+                    this.loadBorrowingsData();
+                }
+            } else {
+                throw new Error(result.message || 'Không thể tạo giao dịch mượn sách');
+            }
+            
+        } catch (error) {
+            console.error('Create borrowing error:', error);
+            this.showAlert(error.message || 'Không thể tạo giao dịch mượn sách', 'error');
+        }
+    }
+
+    resetBorrowingForm() {
+        // Reset form
+        const form = document.getElementById('createBorrowingForm');
+        if (form) {
+            form.reset();
+        }
+        
+        // Hide selected customer and book
+        const selectedCustomer = document.getElementById('selectedCustomer');
+        const selectedBook = document.getElementById('selectedBook');
+        if (selectedCustomer) selectedCustomer.style.display = 'none';
+        if (selectedBook) selectedBook.style.display = 'none';
+        
+        // Clear search results
+        const customerResults = document.getElementById('customerResults');
+        const bookResults = document.getElementById('bookResults');
+        if (customerResults) customerResults.innerHTML = '';
+        if (bookResults) bookResults.innerHTML = '';
+        
+        // Reset borrow days and update expected date
+        const borrowDaysInput = document.getElementById('borrowDays');
+        if (borrowDaysInput) {
+            borrowDaysInput.value = 14;
+            this.updateExpectedReturnDate();
+        }
+    }
 }
 
 // Initialize admin manager when DOM is loaded
@@ -1196,5 +1495,18 @@ function searchBooks() {
 function clearSearch() {
     if (window.adminManager) {
         window.adminManager.clearSearch();
+    }
+}
+
+// Global functions for borrowing creation
+function searchCustomer() {
+    if (window.adminManager) {
+        window.adminManager.searchCustomer();
+    }
+}
+
+function searchBook() {
+    if (window.adminManager) {
+        window.adminManager.searchBook();
     }
 }

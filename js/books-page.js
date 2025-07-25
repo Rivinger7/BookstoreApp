@@ -245,15 +245,10 @@ class BooksPageManager {
                         <span class="status-badge ${statusClass}">
                             ${statusText}
                         </span>
-                        ${isAvailable ? `
-                        <button class="btn btn-primary btn-sm" onclick="borrowBook('${book.id}')">
-                            <i class="fas fa-plus-circle"></i> Mượn sách
-                        </button>
-                        ` : `
-                        <button class="btn btn-secondary btn-sm" disabled>
-                            <i class="fas fa-ban"></i> ${book.quantity === 0 ? 'Hết sách' : 'Không có sẵn'}
-                        </button>
-                        `}
+                        <div class="borrow-notice">
+                            <i class="fas fa-store"></i>
+                            <small>Đến cửa hàng để mượn</small>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -290,15 +285,10 @@ class BooksPageManager {
                         </div>
                     </div>
                     <div class="book-list-actions">
-                    ${isAvailable ? `
-                        <button class="btn btn-primary" onclick="borrowBook('${book.id}')">
-                            <i class="fas fa-plus-circle"></i> Mượn sách
-                        </button>
-                    ` : `
-                        <button class="btn btn-secondary" disabled>
-                            <i class="fas fa-ban"></i> ${book.quantity === 0 ? 'Hết sách' : 'Không có sẵn'}
-                        </button>
-                    `}
+                        <div class="borrow-notice">
+                            <i class="fas fa-store"></i>
+                            <span>Đến cửa hàng để mượn sách</span>
+                        </div>
                         <button class="btn btn-outline" onclick="showBookDetail('${book.id}')">
                             <i class="fas fa-info-circle"></i> Chi tiết
                         </button>
