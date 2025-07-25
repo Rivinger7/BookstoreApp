@@ -20,6 +20,7 @@ class AdminManager {
         this.showSection('dashboard');
     }
 
+    
     checkAdminAuth() {
         const currentUserData = localStorage.getItem('currentUser');
         const user = currentUserData ? JSON.parse(currentUserData) : {};
