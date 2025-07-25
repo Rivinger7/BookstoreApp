@@ -191,57 +191,6 @@ class BooksManager {
         this.applyFilters();
         this.renderBooks();
         this.renderPagination();
-    }    async borrowBook(bookId) {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-            this.showAlert('Vui lòng đăng nhập để mượn sách', 'warning');
-            showLoginModal();
-            return;
-        }
-
-        try {
-            // Get book details for confirmation
-            const book = this.books.find(b => b.id === bookId);
-            if (!book) {
-                this.showAlert('Không tìm thấy sách', 'error');
-                return;
-            }
-
-            // Check if book is available (chỉ dựa vào quantity)
-            if (book.quantity <= 0) {
-                this.showAlert('Sách hiện không có sẵn để mượn', 'warning');
-                return;
-            }
-
-            // Show confirmation dialog
-            const isConfirmed = await this.showConfirmationModal(
-                'Xác nhận mượn sách',
-                `Bạn có chắc chắn muốn mượn sách "<strong>${book.title}</strong>" của tác giả <strong>${book.author}</strong> không?`,
-                'Mượn sách',
-                'Hủy'
-            );
-
-            if (!isConfirmed) {
-                return;
-            }
-
-            // Sử dụng API thực tế để mượn sách
-            try {
-                await api.borrowBook(bookId);
-                this.showAlert('Mượn sách thành công!', 'success');
-                await this.loadBooks(); // Reload to update status
-            } catch (apiError) {
-                console.warn('API borrowBook failed, using mock:', apiError);
-                // Fallback to mock nếu API chưa ready
-                await this.mockBorrowBook(bookId);
-                this.showAlert('Mượn sách thành công! (Demo mode)', 'success');
-                await this.loadBooks();
-            }
-            
-        } catch (error) {
-            console.error('Borrow book error:', error);
-            this.showAlert(error.message || 'Không thể mượn sách', 'error');
-        }
     }
 
     async showBookDetail(bookId) {
@@ -309,41 +258,39 @@ class BooksManager {
         }
 
         const detailHTML = `
-            
-                <img src="${book.image || 'https://via.placeholder.com/200x250?text=No+Image'}" 
-                     alt="${this.escapeHtml(book.title)}" class="book-detail-image" style="margin-right: 20px; height: fit-content;">
+                <div class="book-detail-image">
+                    <img src="${book.book.image || 'https://via.placeholder.com/200x250?text=No+Image'}" 
+                     alt="${this.escapeHtml(book.book.image)}" class="book-detail-image" style="margin-right: 20px; height: fit-content;">
+                </div>
                 <div class="book-detail-info">
-                    <h2>${this.escapeHtml(book.title)}</h2>
-                    <p class="book-detail-author">Tác giả: ${this.escapeHtml(book.author)}</p>
+                    <h2>${this.escapeHtml(book.book.title)}</h2>
+                    <p class="book-detail-author">Tác giả: ${this.escapeHtml(book.book.author)}</p>
                     <p class="book-detail-description">
                         ${this.escapeHtml(book.description || 'Không có mô tả')}
                     </p>
                     <div class="book-detail-meta">
                         <div class="meta-item">
                             <div class="meta-label">Thể loại</div>
-                            <div class="meta-value">${this.escapeHtml(this.getCategoryName(book.category))}</div>
+                            <div class="meta-value">${this.escapeHtml(this.getCategoryName(book.book.categoryName))}</div>
                         </div>
                         <div class="meta-item">
                             <div class="meta-label">ISBN</div>
-                            <div class="meta-value">${book.isbn || 'N/A'}</div>                        </div>
-                        <div class="meta-item">
-                            <div class="meta-label">Năm xuất bản</div>
-                            <div class="meta-value">${book.year || 'N/A'}</div>
+                            <div class="meta-value">${book.book.isbn || 'N/A'}</div>                        
                         </div>
                         <div class="meta-item">
                             <div class="meta-label">Số lượng</div>
                             <div class="meta-value">
                                 <span class="quantity-info">
                                     <i class="fas fa-warehouse"></i>
-                                    ${book.quantity || 0} cuốn
+                                    ${book.book.quantity || 0} cuốn
                                 </span>
                             </div>
                         </div>
                         <div class="meta-item">
                             <div class="meta-label">Trạng thái</div>
                             <div class="meta-value">
-                                <span class="status-badge ${book.quantity > 0 ? 'status-available' : 'status-borrowed'}">
-                                    ${book.quantity > 0 ? 'Có sẵn' : 'Hết sách'}
+                                <span class="status-badge ${book.book.quantity > 0 ? 'status-available' : 'status-borrowed'}">
+                                    ${book.book.quantity > 0 ? 'Có sẵn' : 'Hết sách'}
                                 </span>
                             </div>
                         </div>
@@ -807,47 +754,6 @@ class BooksManager {
             }, 500);
         });
     }
-
-    async mockBorrowBook(bookId) {
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                const book = this.books.find(b => b.id === bookId);
-                
-                if (!book) {
-                    reject(new Error('Không tìm thấy sách'));
-                    return;
-                }
-                
-                if (book.quantity <= 0) {
-                    reject(new Error('Sách không có sẵn'));
-                    return;
-                }
-                
-                // Update book quantity
-                book.quantity -= 1;
-                
-                // Add to borrowed books
-                const borrowedBooks = JSON.parse(localStorage.getItem('borrowedBooks') || '[]');
-                const newBorrowRecord = {
-                    id: Date.now(),
-                    userId: currentUser.email,
-                    bookId: book.id,
-                    title: book.title,
-                    author: book.author,
-                    image: book.image,
-                    borrowDate: new Date().toISOString().split('T')[0],
-                    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
-                    returnDate: null,
-                    status: 'borrowed'
-                };
-                
-                borrowedBooks.push(newBorrowRecord);
-                localStorage.setItem('borrowedBooks', JSON.stringify(borrowedBooks));
-                  resolve({ message: 'Mượn sách thành công' });
-            }, 1000);
-        });
-    }
 }
 
 // Initialize books manager when DOM is loaded
@@ -864,14 +770,6 @@ document.addEventListener('DOMContentLoaded', () => {
 function searchBooks() {
     if (window.booksManager) {
         window.booksManager.searchBooks();
-    } else {
-        console.error('BooksManager not initialized');
-    }
-}
-
-function borrowBook(bookId) {
-    if (window.booksManager) {
-        window.booksManager.borrowBook(bookId);
     } else {
         console.error('BooksManager not initialized');
     }

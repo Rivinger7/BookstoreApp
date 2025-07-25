@@ -805,15 +805,6 @@ class BooksPageManager {
                         <p>${book.description && book.description.length > 120 ? book.description.substring(0, 120) + '...' : book.description || 'Không có mô tả'}</p>
                     </div>
                     <div class="quick-view-actions">
-                    ${isAvailable ? `
-                        <button class="btn btn-primary" onclick="borrowBook('${book.id}'); closeModal('quickViewModal')">
-                            <i class="fas fa-plus-circle"></i> Mượn sách
-                        </button>
-                    ` : `
-                        <button class="btn btn-secondary" disabled>
-                            <i class="fas fa-ban"></i> ${book.quantity === 0 ? 'Hết sách' : 'Không có sẵn'}
-                        </button>
-                    `}
                         <button class="btn btn-outline" onclick="showBookDetail('${book.id}'); closeModal('quickViewModal')">
                             <i class="fas fa-info-circle"></i> Xem chi tiết
                         </button>
@@ -1411,15 +1402,6 @@ function showQuickView(bookId) {
                             <p>${book.description.length > 120 ? book.description.substring(0, 120) + '...' : book.description}</p>
                         </div>
                         <div class="quick-view-actions">
-                            ${isAvailable ? `
-                            <button class="btn btn-primary" onclick="alert('Chức năng mượn sách sẽ được thêm'); closeModal('quickViewModal')">
-                                <i class="fas fa-plus-circle"></i> Mượn sách
-                            </button>
-                            ` : `
-                            <button class="btn btn-secondary" disabled>
-                                <i class="fas fa-ban"></i> ${book.quantity === 0 ? 'Hết sách' : 'Không có sẵn'}
-                            </button>
-                            `}
                             <button class="btn btn-outline" onclick="showBookDetail('${book.id}'); closeModal('quickViewModal')">
                                 <i class="fas fa-info-circle"></i> Xem chi tiết
                             </button>
@@ -1576,15 +1558,6 @@ function showBookDetail(bookId) {
                         <p>${book.description}</p>
                     </div>
                     <div class="book-actions">
-                        ${isAvailable ? `
-                        <button class="btn btn-primary" onclick="alert('Chức năng mượn sách sẽ được thêm'); closeModal('bookModal')">
-                            <i class="fas fa-plus-circle"></i> Mượn sách
-                        </button>
-                        ` : `
-                        <button class="btn btn-secondary" disabled>
-                            <i class="fas fa-ban"></i> ${book.quantity === 0 ? 'Hết sách' : 'Không có sẵn'}
-                        </button>
-                        `}
                         <button class="btn btn-outline" onclick="closeModal('bookModal')">
                             <i class="fas fa-times"></i> Đóng
                         </button>
