@@ -7,6 +7,9 @@ class BooksManager {
         this.currentSearch = '';
         this.books = [];
         this.allBooks = []; // Cache tất cả sách từ API
+        this.totalItems = 0;
+        this.totalPages = 0;
+        this.filteredTotal = 0;
         this.init();
     }
 
@@ -51,25 +54,39 @@ class BooksManager {
             // Xử lý response từ API thực tế và cache vào allBooks
             if (result && Array.isArray(result)) {
                 this.allBooks = result;
+                this.totalItems = result.length;
             } else if (result && result.books) {
                 this.allBooks = result.books;
+                this.totalItems = result.totalCount || result.total || result.books.length;
             } else if (result && result.data) {
                 this.allBooks = Array.isArray(result.data) ? result.data : result.data.books || [];
+                this.totalItems = result.totalCount || result.total || this.allBooks.length;
             } else {
-                this.allBooks = [];
+                // Fallback to mock data if API fails
+                console.log('No books from API, using mock data');
+                this.allBooks = await this.getMockBooks();
+                this.totalItems = this.allBooks.length;
             }
+            
+            // Calculate total pages
+            this.totalPages = Math.ceil(this.totalItems / this.pageSize);
             
             // Áp dụng filter ở frontend
             this.applyFilters();
             this.renderBooks();
+            this.renderPagination();
             
         } catch (error) {
             console.error('Load books error:', error);
             this.showAlert('Không thể tải danh sách sách từ server', 'error');
             
-            // Fallback to empty array on error
-            this.books = [];
+            // Fallback to mock data on error
+            this.allBooks = await this.getMockBooks();
+            this.totalItems = this.allBooks.length;
+            this.totalPages = Math.ceil(this.totalItems / this.pageSize);
+            this.applyFilters();
             this.renderBooks();
+            this.renderPagination();
         } finally {
             this.hideLoading();
         }
@@ -137,7 +154,14 @@ class BooksManager {
             );
         }
         
-        this.books = filteredBooks;
+        // Update total filtered items
+        this.filteredTotal = filteredBooks.length;
+        this.totalPages = Math.ceil(this.filteredTotal / this.pageSize);
+        
+        // Apply pagination
+        const startIndex = (this.currentPage - 1) * this.pageSize;
+        const endIndex = startIndex + this.pageSize;
+        this.books = filteredBooks.slice(startIndex, endIndex);
     }
 
     handleFilterChange(category) {
@@ -153,6 +177,7 @@ class BooksManager {
         // Áp dụng filter ở frontend, không cần reload API
         this.applyFilters();
         this.renderBooks();
+        this.renderPagination();
     }
 
     async searchBooks() {
@@ -165,6 +190,7 @@ class BooksManager {
         // Áp dụng search ở frontend, không cần reload API
         this.applyFilters();
         this.renderBooks();
+        this.renderPagination();
     }    async borrowBook(bookId) {
         const token = localStorage.getItem('authToken');
         if (!token) {
@@ -549,6 +575,57 @@ class BooksManager {
                 alert.parentNode.removeChild(alert);
             }
         }, 5000);
+    }
+
+    renderPagination() {
+        // For index.html, pagination is usually simpler - just "Load More" or basic pagination
+        const booksSection = document.querySelector('.books-section');
+        if (!booksSection) return;
+        
+        // Remove existing pagination
+        const existingPagination = booksSection.querySelector('.pagination-container');
+        if (existingPagination) {
+            existingPagination.remove();
+        }
+        
+        // Only show pagination if we have more than one page
+        if (this.totalPages <= 1) return;
+        
+        const paginationHTML = `
+            <div class="pagination-container" style="text-align: center; margin-top: 30px;">
+                <div class="pagination-info">
+                    Trang ${this.currentPage} / ${this.totalPages} 
+                    (${this.filteredTotal || this.totalItems} sách)
+                </div>
+                <div class="pagination-buttons" style="margin-top: 15px;">
+                    ${this.currentPage > 1 ? `<button class="btn btn-outline" onclick="window.booksManager.goToPage(${this.currentPage - 1})">← Trước</button>` : ''}
+                    ${this.currentPage < this.totalPages ? `<button class="btn btn-outline" onclick="window.booksManager.goToPage(${this.currentPage + 1})">Tiếp →</button>` : ''}
+                </div>
+            </div>
+        `;
+        
+        // Insert before the "Xem tất cả sách" button
+        const viewAllButton = booksSection.querySelector('.text-center');
+        if (viewAllButton) {
+            viewAllButton.insertAdjacentHTML('beforebegin', paginationHTML);
+        } else {
+            booksSection.insertAdjacentHTML('beforeend', paginationHTML);
+        }
+    }
+
+    goToPage(page) {
+        if (page < 1 || page > this.totalPages) return;
+        
+        this.currentPage = page;
+        this.applyFilters();
+        this.renderBooks();
+        this.renderPagination();
+        
+        // Scroll to books section
+        const booksGrid = document.getElementById('booksGrid');
+        if (booksGrid) {
+            booksGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }    // Mock functions for demo - Remove when backend is ready
     async getMockBooks() {
         return new Promise(resolve => {

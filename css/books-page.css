@@ -482,17 +482,23 @@
 /* Pagination */
 .pagination-section {
     margin-top: 50px;
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     align-items: center;
     gap: 20px;
+    visibility: visible !important;
+    opacity: 1 !important;
+    padding: 20px;
 }
 
 .pagination {
-    display: flex;
+    display: flex !important;
     justify-content: center;
     align-items: center;
     gap: 5px;
+    visibility: visible !important;
+    opacity: 1 !important;
+    padding: 10px;
 }
 
 .pagination button {
@@ -520,6 +526,13 @@
 .pagination button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.pagination-dots {
+    padding: 10px 5px;
+    color: var(--text-light);
+    font-size: 14px;
+    user-select: none;
 }
 
 .pagination-info {

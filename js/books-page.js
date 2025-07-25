@@ -180,7 +180,16 @@ class BooksPageManager {
                 console.warn('API failed, using mock data:', error);
                 result = await this.getMockBooksData(params);
                 this.allBooks = result.books || [];
+                console.log('Mock data loaded:', this.allBooks.length, 'books');
             }
+            
+            // Fallback nếu không có data
+            if (!this.allBooks || this.allBooks.length === 0) {
+                console.log('No books found, using fallback data');
+                this.allBooks = this.getFallbackBooks();
+            }
+            
+            console.log('Total books loaded:', this.allBooks.length);
             
             // Áp dụng filter và pagination ở frontend
             this.applyFiltersAndPagination();
@@ -191,8 +200,14 @@ class BooksPageManager {
             this.hideLoading();
         } catch (error) {
             console.error('Error loading books:', error);
+            // Fallback to mock data
+            this.allBooks = this.getFallbackBooks();
+            this.applyFiltersAndPagination();
+            this.renderBooks();
+            this.renderPagination();
+            this.updateResultsInfo();
             this.hideLoading();
-            this.showAlert('Có lỗi xảy ra khi tải danh sách sách', 'error');
+            this.showAlert('Có lỗi xảy ra khi tải danh sách sách, đang sử dụng dữ liệu mẫu', 'warning');
         }
     }
 
@@ -546,17 +561,36 @@ class BooksPageManager {
         const container = document.getElementById('pagination');
         const infoContainer = document.getElementById('paginationInfo');
         
-        if (!container || this.totalPages <= 1) {
-            if (container) container.innerHTML = '';
+        console.log('renderPagination called:', {
+            container: !!container,
+            totalPages: this.totalPages,
+            currentPage: this.currentPage,
+            totalItems: this.totalItems,
+            itemsPerPage: this.itemsPerPage
+        });
+        
+        if (!container) {
+            console.error('Pagination container not found');
+            return;
+        }
+        
+        // Chỉ ẩn phân trang nếu không có dữ liệu hoặc có lỗi
+        if (this.totalPages <= 1 && this.totalItems === 0) {
+            container.innerHTML = '';
             if (infoContainer) infoContainer.innerHTML = '';
             return;
+        }
+
+        // Đảm bảo có ít nhất 1 trang
+        if (this.totalPages < 1) {
+            this.totalPages = 1;
         }
 
         let paginationHTML = '';
         
         // Previous button
         if (this.currentPage > 1) {
-            paginationHTML += `<button class="pagination-btn" onclick="window.booksPageManager.goToPage(${this.currentPage - 1})">
+            paginationHTML += `<button onclick="window.booksPageManager.goToPage(${this.currentPage - 1})">
                 <i class="fas fa-chevron-left"></i> Trước
             </button>`;
         }
@@ -566,14 +600,14 @@ class BooksPageManager {
         const endPage = Math.min(this.totalPages, this.currentPage + 2);
 
         if (startPage > 1) {
-            paginationHTML += `<button class="pagination-btn" onclick="window.booksPageManager.goToPage(1)">1</button>`;
+            paginationHTML += `<button onclick="window.booksPageManager.goToPage(1)">1</button>`;
             if (startPage > 2) {
                 paginationHTML += `<span class="pagination-dots">...</span>`;
             }
         }
 
         for (let i = startPage; i <= endPage; i++) {
-            paginationHTML += `<button class="pagination-btn ${i === this.currentPage ? 'active' : ''}" 
+            paginationHTML += `<button class="${i === this.currentPage ? 'active' : ''}" 
                 onclick="window.booksPageManager.goToPage(${i})">${i}</button>`;
         }
 
@@ -581,23 +615,33 @@ class BooksPageManager {
             if (endPage < this.totalPages - 1) {
                 paginationHTML += `<span class="pagination-dots">...</span>`;
             }
-            paginationHTML += `<button class="pagination-btn" onclick="window.booksPageManager.goToPage(${this.totalPages})">${this.totalPages}</button>`;
+            paginationHTML += `<button onclick="window.booksPageManager.goToPage(${this.totalPages})">${this.totalPages}</button>`;
         }
 
         // Next button
         if (this.currentPage < this.totalPages) {
-            paginationHTML += `<button class="pagination-btn" onclick="window.booksPageManager.goToPage(${this.currentPage + 1})">
+            paginationHTML += `<button onclick="window.booksPageManager.goToPage(${this.currentPage + 1})">
                 Sau <i class="fas fa-chevron-right"></i>
             </button>`;
         }
 
         container.innerHTML = paginationHTML;
+        console.log('Pagination HTML set:', paginationHTML);
 
         // Update pagination info
         const startItem = (this.currentPage - 1) * this.itemsPerPage + 1;
         const endItem = Math.min(this.currentPage * this.itemsPerPage, this.totalItems);
         if (infoContainer) {
-            infoContainer.innerHTML = `Hiển thị ${startItem}-${endItem} trong tổng số ${this.totalItems} kết quả`;
+            const infoText = `Hiển thị ${startItem}-${endItem} trong tổng số ${this.totalItems} kết quả`;
+            infoContainer.innerHTML = infoText;
+        }
+        
+        // Đảm bảo pagination section luôn hiển thị
+        const paginationSection = container.closest('.pagination-section');
+        if (paginationSection) {
+            paginationSection.style.display = 'flex';
+            paginationSection.style.visibility = 'visible';
+            paginationSection.style.opacity = '1';
         }
     }
 
@@ -772,7 +816,8 @@ class BooksPageManager {
 
     // Function to get fallback books data when bookManager is not available
     getFallbackBooks() {
-        return [
+        // Tạo danh sách sách lớn để test phân trang
+        const baseBooks = [
             {
                 id: 1,
                 title: "Tôi thấy hoa vàng trên cỏ xanh",
@@ -954,6 +999,47 @@ class BooksPageManager {
                 year: 2024
             }
         ];
+
+        // Tạo thêm nhiều sách để test phân trang (tổng cộng 50 sách)
+        const additionalBooks = [];
+        const authors = [
+            "Haruki Murakami", "J.K. Rowling", "Stephen King", "Agatha Christie", 
+            "Isaac Asimov", "Terry Pratchett", "Neil Gaiman", "Margaret Atwood",
+            "Philip K. Dick", "Ursula K. Le Guin", "Ray Bradbury", "Arthur C. Clarke",
+            "Douglas Adams", "Orson Scott Card", "Frank Herbert", "William Gibson",
+            "Kurt Vonnegut", "Gabriel García Márquez", "Toni Morrison", "Maya Angelou",
+            "Jane Austen", "Charles Dickens", "Mark Twain", "Ernest Hemingway",
+            "F. Scott Fitzgerald", "John Steinbeck", "Harper Lee", "To Kill a Mockingbird",
+            "Aldous Huxley", "Ray Bradbury", "George R.R. Martin", "J.R.R. Tolkien",
+            "C.S. Lewis", "Roald Dahl", "Lewis Carroll", "Oscar Wilde",
+            "Virginia Woolf", "James Joyce", "Marcel Proust", "Franz Kafka"
+        ];
+
+        const categories = ["fiction", "science", "technology", "history", "business"];
+        const categoryNames = ["Tiểu thuyết", "Khoa học", "Công nghệ", "Lịch sử", "Kinh doanh"];
+
+        for (let i = 13; i <= 50; i++) {
+            const categoryIndex = Math.floor(Math.random() * categories.length);
+            const author = authors[Math.floor(Math.random() * authors.length)];
+            
+            additionalBooks.push({
+                id: i,
+                title: `Sách số ${i} - ${author}`,
+                author: author,
+                category: categories[categoryIndex],
+                categoryId: categories[categoryIndex],
+                categoryName: categoryNames[categoryIndex],
+                image: `https://images.unsplash.com/photo-${1500000000000 + i}?w=280&h=320&fit=crop`,
+                available: Math.random() > 0.2, // 80% chance available
+                quantity: Math.floor(Math.random() * 10),
+                totalQuantity: Math.floor(Math.random() * 10) + 5,
+                description: `Mô tả chi tiết cho sách số ${i} của tác giả ${author}.`,
+                isbn: `978-604-2-${String(i).padStart(5, '0')}-${Math.floor(Math.random() * 10)}`,
+                year: 2000 + Math.floor(Math.random() * 24)
+            });
+        }
+
+        return [...baseBooks, ...additionalBooks];
     }
 
     // Mock function for demo - Remove when backend is ready
@@ -1068,13 +1154,54 @@ class BooksPageManager {
 
 // Initialize books page manager when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing BooksPageManager...');
     window.booksPageManager = new BooksPageManager();
+    console.log('BooksPageManager initialized:', window.booksPageManager);
 });
 
 // Global functions for HTML onclick events
 function performAdvancedSearch() {
+    console.log('performAdvancedSearch called');
     if (window.booksPageManager) {
         window.booksPageManager.performAdvancedSearch();
+    } else {
+        console.error('BooksPageManager not initialized');
+    }
+}
+
+function applyFilters() {
+    console.log('applyFilters called');
+    if (window.booksPageManager) {
+        window.booksPageManager.applyFilters();
+    } else {
+        console.error('BooksPageManager not initialized');
+    }
+}
+
+function clearAllFilters() {
+    console.log('clearAllFilters called');
+    if (window.booksPageManager) {
+        window.booksPageManager.clearAllFilters();
+    } else {
+        console.error('BooksPageManager not initialized');
+    }
+}
+
+function changeView(view) {
+    console.log('changeView called with:', view);
+    if (window.booksPageManager) {
+        window.booksPageManager.changeView(view);
+    } else {
+        console.error('BooksPageManager not initialized');
+    }
+}
+
+function changeItemsPerPage() {
+    console.log('changeItemsPerPage called');
+    if (window.booksPageManager) {
+        window.booksPageManager.changeItemsPerPage();
+    } else {
+        console.error('BooksPageManager not initialized');
     }
 }
 

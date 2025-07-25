@@ -1580,3 +1580,41 @@ body {
         font-size: 14px;
     }
 }
+
+/* Pagination Styles for Index Page */
+.pagination-container {
+    text-align: center;
+    margin: 30px 0;
+    padding: 20px;
+    background: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+}
+
+.pagination-info {
+    color: var(--text-light);
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+.pagination-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.pagination-buttons .btn {
+    min-width: 100px;
+}
+
+@media (max-width: 768px) {
+    .pagination-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .pagination-buttons .btn {
+        width: 200px;
+    }
+}
