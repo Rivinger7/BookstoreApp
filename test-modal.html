@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Modal</title>
+    <link rel="stylesheet" href="css/style_clean.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <div class="main-content">
+        <button onclick="showAddBookModal()" class="btn btn-primary">Mở Modal</button>
+    </div>
+
+    <!-- Add/Edit Book Modal -->
+    <div class="modal" id="bookFormModal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('bookFormModal')">&times;</span>
+            <h2 id="bookFormTitle">Test Modal</h2>
+            <form id="bookForm">
+                <div class="form-group">
+                    <label>Test Input</label>
+                    <input type="text" placeholder="Test">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('bookFormModal')">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Test modal functions
+        function showAddBookModal() {
+            console.log('Showing modal...');
+            const modal = document.getElementById('bookFormModal');
+            if (modal) {
+                modal.style.display = 'block';
+                modal.classList.add('show');
+                console.log('Modal display set to block');
+            } else {
+                console.log('Modal not found!');
+            }
+        }
+
+        function closeModal(modalId) {
+            console.log('Closing modal:', modalId);
+            if (modalId) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.style.display = 'none';
+                    modal.classList.remove('show');
+                    console.log('Modal closed');
+                }
+            }
+        }
+
+        // Close modal on overlay click
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                e.target.style.display = 'none';
+                e.target.classList.remove('show');
+                console.log('Modal closed by overlay click');
+            }
+        });
+
+        // Close modal on ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const modals = document.querySelectorAll('.modal');
+                modals.forEach(modal => {
+                    if (modal.style.display === 'block') {
+                        modal.style.display = 'none';
+                        modal.classList.remove('show');
+                        console.log('Modal closed by ESC key');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

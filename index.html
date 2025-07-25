@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BookLend - Mượn trả sách online</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="nav-brand">
+                <i class="fas fa-book"></i>
+                <span>BookLend</span>
+            </div>            <nav class="nav-menu">
+                <ul>
+                    <li><a href="#home">Trang chủ</a></li>
+                    <li><a href="books.html">Thư viện sách</a></li>
+                    <li><a href="#books">Sách nổi bật</a></li>
+                    <li><a href="#about">Giới thiệu</a></li>
+                    <li><a href="#contact">Liên hệ</a></li>
+                </ul>
+            </nav>
+            <div class="nav-auth">
+                <button class="btn btn-outline" onclick="showLoginModal()">Đăng nhập</button>
+                <button class="btn btn-primary" onclick="showRegisterModal()">Đăng ký</button>
+                <div class="user-profile" id="userProfile" style="display: none;">
+                    <span id="userName"></span>
+                    <div class="dropdown">
+                        <button class="dropdown-btn"><i class="fas fa-user-circle"></i></button>
+                        <div class="dropdown-content">
+                            <a href="#" onclick="showProfile()">Hồ sơ</a>
+                            <a href="#" onclick="showMyBooks()">Sách đã mượn</a>
+                            <a href="admin.html" id="adminLink" style="display: none;">Quản lý Admin</a>
+                            <a href="#" onclick="logout()">Đăng xuất</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Mượn sách online dễ dàng</h1>
+                <p>Khám phá kho tàng sách phong phú với hệ thống mượn trả hiện đại và tiện lợi</p>
+                <div class="search-bar">
+                    <input type="text" placeholder="Tìm kiếm sách..." id="searchInput">
+                    <button class="btn btn-primary" onclick="searchBooks()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Books Section -->
+    <section class="books-section" id="books">
+        <div class="container">
+            <h2>Sách nổi bật</h2>
+            <div class="filters">
+                <button class="filter-btn active" data-category="all">Tất cả</button>
+                <button class="filter-btn" data-category="fiction">Tiểu thuyết</button>
+                <button class="filter-btn" data-category="science">Khoa học</button>
+                <button class="filter-btn" data-category="technology">Công nghệ</button>
+                <button class="filter-btn" data-category="history">Lịch sử</button>
+            </div>            <div class="books-grid" id="booksGrid">
+                <!-- Books will be loaded here -->
+            </div>
+            <div class="text-center mt-20">
+                <a href="books.html" class="btn btn-primary">
+                    <i class="fas fa-arrow-right"></i> Xem tất cả sách
+                </a>
+            </div>
+            <div class="loading" id="loading" style="display: none;">
+                <i class="fas fa-spinner fa-spin"></i> Đang tải...
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about-section" id="about">
+        <div class="container">
+            <div class="about-content">
+                <div class="about-text">
+                    <h2>Về BookLend</h2>
+                    <p>BookLend là nền tảng mượn trả sách online hiện đại, giúp bạn dễ dàng tiếp cận hàng nghìn đầu sách chất lượng cao mà không cần đến thư viện.</p>
+                    <div class="features">
+                        <div class="feature">
+                            <i class="fas fa-book-open"></i>
+                            <h3>Kho sách phong phú</h3>
+                            <p>Hàng nghìn đầu sách từ nhiều thể loại khác nhau</p>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-clock"></i>
+                            <h3>Mượn trả dễ dàng</h3>
+                            <p>Hệ thống mượn trả tự động, tiện lợi 24/7</p>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-shield-alt"></i>
+                            <h3>An toàn bảo mật</h3>
+                            <p>Thông tin cá nhân được bảo vệ tuyệt đối</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>BookLend</h3>
+                    <p>Nền tảng mượn trả sách online hàng đầu Việt Nam</p>
+                </div>                <div class="footer-section">
+                    <h3>Liên kết</h3>
+                    <ul>
+                        <li><a href="#home">Trang chủ</a></li>
+                        <li><a href="books.html">Thư viện sách</a></li>
+                        <li><a href="#books">Sách nổi bật</a></li>
+                        <li><a href="#about">Giới thiệu</a></li>
+                        <li><a href="#contact">Liên hệ</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Liên hệ</h3>
+                    <p><i class="fas fa-envelope"></i> info@booklend.com</p>
+                    <p><i class="fas fa-phone"></i> (024) 1234 5678</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 BookLend. Tất cả quyền được bảo lưu.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('loginModal')">&times;</span>
+            <h2>Đăng nhập</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <input type="text" id="loginEmail" placeholder="Tên đăng nhập hoặc Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="loginPassword" placeholder="Mật khẩu" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Đăng nhập</button>
+            </form>
+            <p class="modal-footer">
+                Chưa có tài khoản? <a href="#" onclick="switchToRegister()">Đăng ký ngay</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal" id="registerModal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('registerModal')">&times;</span>
+            <h2>Đăng ký</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <input type="text" id="registerUsername" placeholder="Tên đăng nhập" required>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="registerName" placeholder="Họ và tên" required>
+                </div>
+                <div class="form-group">
+                    <input type="email" id="registerEmail" placeholder="Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="registerPassword" placeholder="Mật khẩu" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="confirmPassword" placeholder="Xác nhận mật khẩu" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Đăng ký</button>
+            </form>
+            <p class="modal-footer">
+                Đã có tài khoản? <a href="#" onclick="switchToLogin()">Đăng nhập</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Book Detail Modal -->
+    <div class="modal" id="bookModal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('bookModal')">&times;</span>
+            <div class="book-detail" id="bookDetail" style="display: flex; flex-direction: row;">
+                <!-- Book details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="modal" id="profileModal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('profileModal')">&times;</span>
+            <h2>Hồ sơ cá nhân</h2>
+            <div class="profile-content">
+                <div class="profile-info">
+                    <div class="profile-avatar">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div class="profile-details">
+                        <div class="form-group">
+                            <label>Họ và tên:</label>
+                            <input type="text" id="profileName" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Email:</label>
+                            <input type="email" id="profileEmail" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Ngày tham gia:</label>
+                            <input type="text" id="profileJoinDate" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Số sách đã mượn:</label>
+                            <input type="text" id="profileBooksCount" readonly>
+                        </div>
+                    </div>
+                </div>
+                <div class="profile-actions">
+                    <button class="btn btn-primary" onclick="editProfile()">Chỉnh sửa</button>
+                    <button class="btn btn-outline" onclick="changePassword()">Đổi mật khẩu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- My Books Modal -->
+    <div class="modal" id="myBooksModal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('myBooksModal')">&times;</span>
+            <h2>Sách đã mượn</h2>
+            <div class="my-books-content">
+                <div class="books-tabs">
+                    <button class="tab-btn active" data-tab="borrowed">Đang mượn</button>
+                    <button class="tab-btn" data-tab="returned">Đã trả</button>
+                    <button class="tab-btn" data-tab="overdue">Quá hạn</button>
+                </div>
+                <div class="tab-content">
+                    <div class="tab-pane active" id="borrowedTab">
+                        <div class="books-list" id="borrowedBooksList">
+                            <!-- Borrowed books will be loaded here -->
+                        </div>
+                    </div>
+                    <div class="tab-pane" id="returnedTab">
+                        <div class="books-list" id="returnedBooksList">
+                            <!-- Returned books will be loaded here -->
+                        </div>
+                    </div>
+                    <div class="tab-pane" id="overdueTab">
+                        <div class="books-list" id="overdueBooksList">
+                            <!-- Overdue books will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>    </div>
+
+    <!-- Quick View Modal -->
+    <div class="modal" id="quickViewModal">
+        <div class="modal-content modal-medium">
+            <span class="close" onclick="closeModal('quickViewModal')">&times;</span>
+            <div class="quick-view-content" id="quickViewContent">
+                <!-- Quick view content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal" id="confirmationModal">
+        <div class="modal-content modal-small">
+            <div class="confirmation-content">
+                <div class="confirmation-icon">
+                    <i class="fas fa-question-circle"></i>
+                </div>
+                <h3 id="confirmationTitle">Xác nhận</h3>
+                <p id="confirmationMessage">Bạn có chắc chắn muốn thực hiện hành động này?</p>
+                <div class="confirmation-actions">
+                    <button class="btn btn-outline" id="confirmationCancel">Hủy</button>
+                    <button class="btn btn-primary" id="confirmationConfirm">Xác nhận</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/books.js"></script>
+    <script src="js/main.js"></script>
+    
+    <!-- Ensure global functions are available -->
+    <script>
+        // Fallback for global functions
+        document.addEventListener('DOMContentLoaded', function() {
+            // Additional setup if needed
+            console.log('DOM fully loaded');
+            
+            // Test if modals exist
+            const profileModal = document.getElementById('profileModal');
+            const myBooksModal = document.getElementById('myBooksModal');
+            
+            console.log('Profile modal found:', !!profileModal);
+            console.log('My books modal found:', !!myBooksModal);
+            
+            // If auth manager doesn't exist, create a simple one
+            if (!window.authManager) {
+                window.authManager = {
+                    showAlert: function(message, type) {
+                        alert(message);
+                    }
+                };
+            }
+        });
+    </script>
+</body>
+</html>

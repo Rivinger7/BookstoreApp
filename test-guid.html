@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test GUID API</title>
+</head>
+<body>
+    <h1>Test API với GUID</h1>
+    <button onclick="testAPI()">Test API</button>
+    <div id="result"></div>
+
+    <script>
+        // Test GUID
+        const sampleGuid = "550e8400-e29b-41d4-a716-446655440000";
+        
+        function testAPI() {
+            console.log('Testing with GUID:', sampleGuid);
+            
+            // Test showBookDetail function với GUID string
+            if (typeof showBookDetail === 'function') {
+                console.log('Calling showBookDetail with GUID');
+                showBookDetail(sampleGuid);
+            } else {
+                console.log('showBookDetail function not found');
+            }
+            
+            document.getElementById('result').innerHTML = 
+                'Test completed with GUID: ' + sampleGuid;
+        }
+        
+        // Mock showBookDetail for testing
+        function showBookDetail(bookId) {
+            console.log('Mock showBookDetail called with:', bookId, typeof bookId);
+            alert('Book ID: ' + bookId + ' (Type: ' + typeof bookId + ')');
+        }
+    </script>
+</body>
+</html>

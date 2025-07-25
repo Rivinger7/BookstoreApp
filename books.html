@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danh sách sách - BookLend</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/books-page.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="nav-brand">
+                <i class="fas fa-book"></i>
+                <span>BookLend</span>
+            </div>
+            <nav class="nav-menu">
+                <ul>
+                    <li><a href="index.html">Trang chủ</a></li>
+                    <li><a href="books.html" class="active">Thư viện sách</a></li>
+                    <li><a href="index.html#books">Sách nổi bật</a></li>
+                    <li><a href="index.html#about">Giới thiệu</a></li>
+                    <li><a href="index.html#contact">Liên hệ</a></li>
+                </ul>
+            </nav>
+            <div class="nav-auth">
+                <button class="btn btn-outline" onclick="showLoginModal()">Đăng nhập</button>
+                <button class="btn btn-primary" onclick="showRegisterModal()">Đăng ký</button>
+                <div class="user-profile" id="userProfile" style="display: none;">
+                    <span id="userName"></span>
+                    <div class="dropdown">
+                        <button class="dropdown-btn"><i class="fas fa-user-circle"></i></button>
+                        <div class="dropdown-content">
+                            <a href="#" onclick="showProfile()">Hồ sơ</a>
+                            <a href="#" onclick="showMyBooks()">Sách đã mượn</a>
+                            <a href="admin.html" id="adminLink" style="display: none;">Quản lý Admin</a>
+                            <a href="#" onclick="logout()">Đăng xuất</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <h1>Thư viện sách</h1>
+            <p>Khám phá kho tàng tri thức với hàng nghìn đầu sách đa dạng</p>
+        </div>
+    </section>
+
+    <!-- Search & Filter Section -->
+    <section class="search-filter-section">
+        <div class="container">
+            <div class="search-filter-content">
+                <!-- Advanced Search -->
+                <div class="advanced-search">
+                    <div class="search-inputs">
+                        <div class="search-group">
+                            <input type="text" id="searchTitle" placeholder="Tìm kiếm theo tên sách...">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <div class="search-group">
+                            <input type="text" id="searchAuthor" placeholder="Tìm kiếm theo tác giả...">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="search-group">
+                            <input type="text" id="searchISBN" placeholder="Tìm kiếm theo ISBN...">
+                            <i class="fas fa-barcode"></i>
+                        </div>
+                        <button class="btn btn-primary search-btn" onclick="performAdvancedSearch()">
+                            <i class="fas fa-search"></i> Tìm kiếm
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="filters-section">
+                    <div class="filter-group">
+                        <label>Thể loại:</label>
+                        <select id="categoryFilter" onchange="applyFilters()">
+                            <!-- <option value="">Tất cả thể loại</option>
+                            <option value="fiction">Tiểu thuyết</option>
+                            <option value="science">Khoa học</option>
+                            <option value="technology">Công nghệ</option>
+                            <option value="history">Lịch sử</option>
+                            <option value="art">Nghệ thuật</option>
+                            <option value="business">Kinh doanh</option>
+                            <option value="education">Giáo dục</option>
+                            <option value="health">Sức khỏe</option>
+                            <option value="detective">Trinh thám</option> -->
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Trạng thái:</label>
+                        <select id="statusFilter" onchange="applyFilters()">
+                            <option value="">Tất cả</option>
+                            <option value="available">Có sẵn</option>
+                            <option value="borrowed">Đã mượn</option>
+                        </select>
+                    </div>
+                    <!-- <div class="filter-group">
+                        <label>Năm xuất bản:</label>
+                        <select id="yearFilter" onchange="applyFilters()">
+                            <option value="">Tất cả năm</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                            <option value="2022">2022</option>
+                            <option value="2021">2021</option>
+                            <option value="2020">2020</option>
+                            <option value="older">Trước 2020</option>
+                        </select>
+                    </div> -->
+                    <div class="filter-group">
+                        <label>Sắp xếp:</label>
+                        <select id="sortFilter" onchange="applyFilters()">
+                            <option value="title">Theo tên A-Z</option>
+                            <option value="title_desc">Theo tên Z-A</option>
+                            <option value="author">Theo tác giả A-Z</option>
+                            <option value="author_desc">Theo tác giả Z-A</option>
+                            <!-- <option value="year_desc">Năm mới nhất</option>
+                            <option value="year">Năm cũ nhất</option>
+                            <option value="popular">Phổ biến nhất</option> -->
+                        </select>
+                    </div>
+                    <button class="btn btn-outline clear-filters" onclick="clearAllFilters()">
+                        <i class="fas fa-times"></i> Xóa bộ lọc
+                    </button>
+                </div>
+
+                <!-- View Toggle -->
+                <div class="view-toggle">
+                    <button class="view-btn active" data-view="grid" onclick="changeView('grid')">
+                        <i class="fas fa-th"></i> Lưới
+                    </button>
+                    <button class="view-btn" data-view="list" onclick="changeView('list')">
+                        <i class="fas fa-list"></i> Danh sách
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Results Section -->
+    <section class="results-section">
+        <div class="container">
+            <!-- Results Header -->
+            <div class="results-header">
+                <div class="results-info">
+                    <span id="resultsCount">Hiển thị 0 kết quả</span>
+                    <span id="resultsQuery"></span>
+                </div>
+                <div class="results-per-page">
+                    <label>Hiển thị:</label>
+                    <select id="itemsPerPage" onchange="changeItemsPerPage()">
+                        <option value="12">12 mục</option>
+                        <option value="24">24 mục</option>
+                        <option value="48">48 mục</option>
+                        <option value="96">96 mục</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Books Display -->
+            <div class="books-container">
+                <div class="books-grid" id="booksDisplay">
+                    <!-- Books will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div class="loading-section" id="loadingSection" style="display: none;">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Đang tải sách...</span>
+                </div>
+            </div>
+
+            <!-- No Results -->
+            <div class="no-results" id="noResults" style="display: none;">
+                <div class="no-results-content">
+                    <i class="fas fa-search"></i>
+                    <h3>Không tìm thấy sách nào</h3>
+                    <p>Thử thay đổi từ khóa tìm kiếm hoặc điều chỉnh bộ lọc</p>
+                    <button class="btn btn-primary" onclick="clearAllFilters()">
+                        Xóa tất cả bộ lọc
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination-section">
+                <div class="pagination" id="pagination">
+                    <!-- Pagination will be generated here -->
+                </div>
+                <div class="pagination-info" id="paginationInfo">
+                    <!-- Pagination info will be shown here -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('loginModal')">&times;</span>
+            <h2>Đăng nhập</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <input type="text" id="loginEmail" placeholder="Tên đăng nhập hoặc Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="loginPassword" placeholder="Mật khẩu" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Đăng nhập</button>
+            </form>
+            <p class="modal-footer">
+                Chưa có tài khoản? <a href="#" onclick="switchToRegister()">Đăng ký ngay</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal" id="registerModal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('registerModal')">&times;</span>
+            <h2>Đăng ký</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <input type="text" id="registerUsername" placeholder="Tên đăng nhập" required>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="registerName" placeholder="Họ và tên" required>
+                </div>
+                <div class="form-group">
+                    <input type="email" id="registerEmail" placeholder="Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="registerPassword" placeholder="Mật khẩu" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="confirmPassword" placeholder="Xác nhận mật khẩu" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Đăng ký</button>
+            </form>
+            <p class="modal-footer">
+                Đã có tài khoản? <a href="#" onclick="switchToLogin()">Đăng nhập</a>
+            </p>
+        </div>
+    </div>    <!-- Book Detail Modal -->
+    <div class="modal" id="bookModal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('bookModal')">&times;</span>
+            <div class="book-detail" id="bookDetail">
+                <!-- Book details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="modal" id="profileModal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('profileModal')">&times;</span>
+            <h2>Hồ sơ cá nhân</h2>
+            <div class="profile-content">
+                <div class="profile-info">
+                    <div class="profile-avatar">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div class="profile-details">
+                        <div class="form-group">
+                            <label>Họ và tên:</label>
+                            <input type="text" id="profileName" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Email:</label>
+                            <input type="email" id="profileEmail" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Ngày tham gia:</label>
+                            <input type="text" id="profileJoinDate" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Số sách đã mượn:</label>
+                            <input type="text" id="profileBooksCount" readonly>
+                        </div>
+                    </div>
+                </div>
+                <div class="profile-actions">
+                    <button class="btn btn-primary" onclick="editProfile()">Chỉnh sửa</button>
+                    <button class="btn btn-outline" onclick="changePassword()">Đổi mật khẩu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- My Books Modal -->
+    <div class="modal" id="myBooksModal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('myBooksModal')">&times;</span>
+            <h2>Sách đã mượn</h2>
+            <div class="my-books-content">
+                <div class="books-tabs">
+                    <button class="tab-btn active" data-tab="borrowed">Đang mượn</button>
+                    <button class="tab-btn" data-tab="returned">Đã trả</button>
+                    <button class="tab-btn" data-tab="overdue">Quá hạn</button>
+                </div>
+                <div class="tab-content">
+                    <div class="tab-pane active" id="borrowedTab">
+                        <div class="books-list" id="borrowedBooksList">
+                            <!-- Borrowed books will be loaded here -->
+                        </div>
+                    </div>
+                    <div class="tab-pane" id="returnedTab">
+                        <div class="books-list" id="returnedBooksList">
+                            <!-- Returned books will be loaded here -->
+                        </div>
+                    </div>
+                    <div class="tab-pane" id="overdueTab">
+                        <div class="books-list" id="overdueBooksList">
+                            <!-- Overdue books will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>    <!-- Quick View Modal -->
+    <div class="modal" id="quickViewModal">
+        <div class="modal-content modal-medium">
+            <span class="close" onclick="closeModal('quickViewModal')">&times;</span>
+            <div class="quick-view-content" id="quickViewContent">
+                <!-- Quick view content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal" id="confirmationModal">
+        <div class="modal-content modal-small">
+            <div class="confirmation-content">
+                <div class="confirmation-icon">
+                    <i class="fas fa-question-circle"></i>
+                </div>
+                <h3 id="confirmationTitle">Xác nhận</h3>
+                <p id="confirmationMessage">Bạn có chắc chắn muốn thực hiện hành động này?</p>
+                <div class="confirmation-actions">
+                    <button class="btn btn-outline" id="confirmationCancel">Hủy</button>
+                    <button class="btn btn-primary" id="confirmationConfirm">Xác nhận</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/books.js"></script>
+    <script src="js/books-page.js"></script>
+    <script src="js/main.js"></script>
+      <!-- Ensure global functions are available -->
+    <script>
+        // Fallback for global functions
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM fully loaded');
+            
+            // Test if modals exist
+            const profileModal = document.getElementById('profileModal');
+            const myBooksModal = document.getElementById('myBooksModal');
+            const quickViewModal = document.getElementById('quickViewModal');
+            
+            console.log('Profile modal found:', !!profileModal);
+            console.log('My books modal found:', !!myBooksModal);
+            console.log('Quick view modal found:', !!quickViewModal);
+            
+            // Test if functions exist
+            console.log('showModal function exists:', typeof showModal === 'function');
+            console.log('closeModal function exists:', typeof closeModal === 'function');
+            console.log('showQuickView function exists:', typeof showQuickView === 'function');
+            console.log('booksPageManager exists:', !!window.booksPageManager);
+            
+            // If auth manager doesn't exist, create a simple one
+            if (!window.authManager) {
+                window.authManager = {
+                    showAlert: function(message, type) {
+                        alert(message);
+                    }
+                };
+            }
+            
+            // Test a quick view call
+            console.log('Testing showQuickView function...');
+            window.testQuickView = function() {
+                showQuickView(1);
+            };
+        });
+    </script>
+</body>
+</html>

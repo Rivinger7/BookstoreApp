@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test GUID Functions - BookLend</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/books-page.css">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        .test-btn {
+            margin: 10px;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .test-btn:hover {
+            background: #0056b3;
+        }
+        .guid-display {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Test GUID Functions</h1>
+        <p>Kiểm tra các functions hoạt động với GUID IDs</p>
+        
+        <div class="guid-display">
+            Test GUID 1: 550e8400-e29b-41d4-a716-446655440001<br>
+            Test GUID 2: 550e8400-e29b-41d4-a716-446655440002
+        </div>
+        
+        <button class="test-btn" onclick="testShowBookDetailFunction()">
+            Test showBookDetail với GUID
+        </button>
+        
+        <button class="test-btn" onclick="testShowQuickViewFunction()">
+            Test showQuickView với GUID
+        </button>
+        
+        <button class="test-btn" onclick="checkFunctions()">
+            Kiểm tra Functions Available
+        </button>
+        
+        <div id="output" style="margin-top: 20px; padding: 10px; background: white; border-radius: 4px;"></div>
+    </div>
+
+    <!-- Include necessary modals -->
+    <div class="modal" id="bookModal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('bookModal')">&times;</span>
+            <div class="book-detail" id="bookDetail">
+                <!-- Book details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="quickViewModal">
+        <div class="modal-content modal-medium">
+            <span class="close" onclick="closeModal('quickViewModal')">&times;</span>
+            <div class="quick-view-content" id="quickViewContent">
+                <!-- Quick view content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Include all JS files -->
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/books.js"></script>
+    <script src="js/books-page.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/test-guid.js"></script>
+
+    <script>
+        function testShowBookDetailFunction() {
+            const testId = "550e8400-e29b-41d4-a716-446655440001";
+            const output = document.getElementById('output');
+            
+            output.innerHTML += `<p><strong>Testing showBookDetail with GUID:</strong> ${testId}</p>`;
+            
+            try {
+                if (typeof showBookDetail === 'function') {
+                    showBookDetail(testId);
+                    output.innerHTML += `<p style="color: green;">✅ showBookDetail function called successfully</p>`;
+                } else {
+                    output.innerHTML += `<p style="color: red;">❌ showBookDetail function not found</p>`;
+                }
+            } catch (error) {
+                output.innerHTML += `<p style="color: red;">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        function testShowQuickViewFunction() {
+            const testId = "550e8400-e29b-41d4-a716-446655440002";
+            const output = document.getElementById('output');
+            
+            output.innerHTML += `<p><strong>Testing showQuickView with GUID:</strong> ${testId}</p>`;
+            
+            try {
+                if (typeof showQuickView === 'function') {
+                    showQuickView(testId);
+                    output.innerHTML += `<p style="color: green;">✅ showQuickView function called successfully</p>`;
+                } else {
+                    output.innerHTML += `<p style="color: red;">❌ showQuickView function not found</p>`;
+                }
+            } catch (error) {
+                output.innerHTML += `<p style="color: red;">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        function checkFunctions() {
+            const output = document.getElementById('output');
+            output.innerHTML += `<h3>Function Availability Check:</h3>`;
+            
+            const functions = [
+                'showBookDetail',
+                'showQuickView', 
+                'closeModal',
+                'showModal'
+            ];
+            
+            functions.forEach(funcName => {
+                const exists = typeof window[funcName] === 'function';
+                const status = exists ? '✅' : '❌';
+                output.innerHTML += `<p>${status} ${funcName}: ${exists ? 'Available' : 'Not found'}</p>`;
+            });
+            
+            // Check managers
+            output.innerHTML += `<p>📦 booksPageManager: ${!!window.booksPageManager ? 'Available' : 'Not found'}</p>`;
+            output.innerHTML += `<p>📦 booksManager: ${!!window.booksManager ? 'Available' : 'Not found'}</p>`;
+        }
+
+        // Auto-check on load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(checkFunctions, 1000);
+        });
+    </script>
+</body>
+</html>
