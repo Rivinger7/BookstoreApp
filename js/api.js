@@ -4,6 +4,7 @@ class API {
         // Microservices URLs
         this.AUTH_BASE_URL = 'https://localhost:7042/api';
         this.BOOK_BASE_URL = 'https://localhost:7209/api';
+        this.BORROW_BASE_URL = 'https://localhost:7288/api';
         
         this.token = localStorage.getItem('authToken');
         const currentUserData = localStorage.getItem('currentUser');
@@ -311,21 +312,57 @@ class API {
         }
     }
 
-    // BORROWING API Templates
-    async borrowBook(bookId) {
+    // USER SEARCH API
+    async searchUserByUsernameOrEmail(usernameOrEmail) {
         try {
-            const response = await fetch(`${this.BOOK_BASE_URL}/borrowings`, {
-                method: 'POST',
-                headers: this.getHeaders(),
-                body: JSON.stringify({ bookId })
+            const response = await fetch(`${this.AUTH_BASE_URL}/user/${encodeURIComponent(usernameOrEmail)}`, {
+                method: 'GET',
+                headers: this.getHeaders()
             });
             
             return await this.handleResponse(response);
         } catch (error) {
-            console.error('Borrow book error:', error);
+            console.error('Search user error:', error);
             throw error;
         }
     }
+
+    // BOOK SEARCH API
+    async searchBooks(params = {}) {
+        try {
+            const queryString = new URLSearchParams(params).toString();
+            const url = `${this.BOOK_BASE_URL}/books${queryString ? '?' + queryString : ''}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: this.getHeaders(false)
+            });
+            
+            return await this.handleResponse(response);
+        } catch (error) {
+            console.error('Search books error:', error);
+            throw error;
+        }
+    }
+
+    // CREATE BORROWING API
+    async createBorrowing(borrowData) {
+        try {
+            const response = await fetch(`${this.BORROW_BASE_URL}/borrow`, {
+                method: 'POST',
+                headers: this.getHeaders(),
+                body: JSON.stringify(borrowData)
+            });
+            
+            return await this.handleResponse(response);
+        } catch (error) {
+            console.error('Create borrowing error:', error);
+            throw error;
+        }
+    }
+
+    // BORROWING API Templates
+
 
     async returnBook(borrowingId) {
         try {
@@ -373,20 +410,7 @@ class API {
         }
     }
 
-    async createBorrowing(borrowingData) {
-        try {
-            const response = await fetch(`${this.BOOK_BASE_URL}/borrowings`, {
-                method: 'POST',
-                headers: this.getHeaders(),
-                body: JSON.stringify(borrowingData)
-            });
-            
-            return await this.handleResponse(response);
-        } catch (error) {
-            console.error('Create borrowing error:', error);
-            throw error;
-        }
-    }
+
 
     async searchUsers(params = {}) {
         try {

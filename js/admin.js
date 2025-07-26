@@ -137,7 +137,7 @@ class AdminManager {
                 this.loadUsersData();
                 break;
             case 'create-borrowing':
-                this.initCreateBorrowingForm();
+                // Form already initialized in init()
                 break;
             case 'borrowings':
                 this.loadBorrowingsData();
@@ -1218,14 +1218,16 @@ class AdminManager {
     initCreateBorrowingForm() {
         // Setup form handlers
         const form = document.getElementById('createBorrowingForm');
-        if (form) {
+        if (form && !form.dataset.initialized) {
             form.addEventListener('submit', this.handleCreateBorrowing.bind(this));
+            form.dataset.initialized = 'true';
         }
         
-        // Setup borrow days change listener
-        const borrowDaysInput = document.getElementById('borrowDays');
-        if (borrowDaysInput) {
-            borrowDaysInput.addEventListener('change', this.updateExpectedReturnDate.bind(this));
+        // Setup borrow period change listener
+        const borrowPeriodInput = document.getElementById('borrowPeriod');
+        if (borrowPeriodInput) {
+            borrowPeriodInput.addEventListener('change', this.updateExpectedReturnDate.bind(this));
+            borrowPeriodInput.addEventListener('input', this.updateExpectedReturnDate.bind(this));
             // Set initial date
             this.updateExpectedReturnDate();
         }
@@ -1247,41 +1249,23 @@ class AdminManager {
         }
         
         try {
-            // Call API to search customers
-            const result = await this.api.searchUsers({ search: searchTerm });
-            let customers = [];
+            this.showLoading();
+            
+            // Call new API to search user by username or email
+            const result = await this.api.searchUserByUsernameOrEmail(searchTerm);
             
             if (result && result.users) {
-                customers = result.users;
-            } else if (result && Array.isArray(result)) {
-                customers = result;
+                // API trả về thông tin user
+                this.renderCustomerResults([result.users]);
             } else {
-                // Fallback mock data
-                customers = [
-                    {
-                        id: '1',
-                        name: 'Nguyễn Văn A',
-                        email: 'nguyenvana@email.com',
-                        borrowedBooksCount: 2
-                    },
-                    {
-                        id: '2', 
-                        name: 'Trần Thị B',
-                        email: 'tranthib@email.com',
-                        borrowedBooksCount: 0
-                    }
-                ].filter(customer => 
-                    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    customer.email.toLowerCase().includes(searchTerm.toLowerCase())
-                );
+                resultsDiv.innerHTML = '<div class="no-results">Không tìm thấy khách hàng nào</div>';
             }
-            
-            this.renderCustomerResults(customers);
             
         } catch (error) {
             console.error('Search customer error:', error);
-            this.showAlert('Không thể tìm kiếm khách hàng', 'error');
-            resultsDiv.innerHTML = '<p class="error">Không thể tìm kiếm khách hàng</p>';
+            resultsDiv.innerHTML = '<div class="error">Lỗi khi tìm kiếm khách hàng: ' + error.message + '</div>';
+        } finally {
+            this.hideLoading();
         }
     }
 
@@ -1295,32 +1279,38 @@ class AdminManager {
         }
         
         const resultsHTML = customers.map(customer => `
-            <div class="customer-result" onclick="window.adminManager.selectCustomer('${customer.id}', '${customer.name}', '${customer.email}', ${customer.borrowedBooksCount || 0})">
+            <div class="customer-result" onclick="window.adminManager.selectCustomer('${customer.id}', '${customer.fullName || customer.name}', '${customer.email}', '${customer.username}')">
                 <div class="customer-info">
-                    <strong>${customer.name}</strong>
-                    <p>${customer.email}</p>
-                    <small>Đang mượn: ${customer.borrowedBooksCount || 0} sách</small>
+                    <strong>${customer.fullName || customer.name}</strong>
+                    <p><i class="fas fa-envelope"></i> ${customer.email}</p>
+                    <p><i class="fas fa-user"></i> ${customer.username}</p>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline">Chọn</button>
+                <button type="button" class="btn btn-sm btn-outline">
+                    <i class="fas fa-check"></i> Chọn
+                </button>
             </div>
         `).join('');
         
         resultsDiv.innerHTML = resultsHTML;
     }
 
-    selectCustomer(id, name, email, borrowedCount) {
+    selectCustomer(id, name, email, username) {
         // Hide search results
         document.getElementById('customerResults').innerHTML = '';
         
         // Show selected customer
         document.getElementById('selectedCustomer').style.display = 'block';
-        document.getElementById('selectedCustomerId').value = id;
         document.getElementById('selectedCustomerName').textContent = name;
         document.getElementById('selectedCustomerEmail').textContent = email;
-        document.getElementById('selectedCustomerBooksCount').textContent = borrowedCount;
+        // document.getElementById('selectedCustomerUsername').textContent = username;
+        
+        // Store selected customer data
+        this.selectedCustomerData = { id, name, email, username };
         
         // Clear search input
         document.getElementById('customerSearch').value = '';
+        
+        console.log('Selected customer:', this.selectedCustomerData);
     }
 
     async searchBook() {
@@ -1336,41 +1326,26 @@ class AdminManager {
         }
         
         try {
-            // Call API to search books
-            const result = await this.api.getBooks({ search: searchTerm, pageSize: 10 });
-            let books = [];
+            this.showLoading();
             
-            if (result && result.books) {
-                books = result.books;
-            } else if (result && Array.isArray(result)) {
-                books = result;
+            // Call new API to search books
+            const result = await this.api.searchBooks({ 
+                search: searchTerm, 
+                page: 1, 
+                pageSize: 20 
+            });
+            
+            if (result && result.success && result.books) {
+                this.renderBookResults(result.books);
             } else {
-                // Fallback mock data
-                books = [
-                    {
-                        id: '1',
-                        title: 'Tôi thấy hoa vàng trên cỏ xanh',
-                        author: 'Nguyễn Nhật Ánh',
-                        isbn: '978-604-2-01234-5',
-                        quantity: 5,
-                        image: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=280&h=320&fit=crop'
-                    }
-                ].filter(book => 
-                    book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    book.isbn.includes(searchTerm)
-                );
+                resultsDiv.innerHTML = '<div class="no-results">Không tìm thấy sách nào</div>';
             }
-            
-            // Only show available books
-            books = books.filter(book => book.quantity > 0);
-            
-            this.renderBookResults(books);
             
         } catch (error) {
             console.error('Search book error:', error);
-            this.showAlert('Không thể tìm kiếm sách', 'error');
-            resultsDiv.innerHTML = '<p class="error">Không thể tìm kiếm sách</p>';
+            resultsDiv.innerHTML = '<div class="error">Lỗi khi tìm kiếm sách: ' + error.message + '</div>';
+        } finally {
+            this.hideLoading();
         }
     }
 
@@ -1384,45 +1359,55 @@ class AdminManager {
         }
         
         const resultsHTML = books.map(book => `
-            <div class="book-result" onclick="window.adminManager.selectBook('${book.id}', '${book.title}', '${book.author}', '${book.isbn}', ${book.quantity}, '${book.image || ''}')">
+            <div class="book-result" onclick="window.adminManager.selectBook('${book.id}', '${book.title}', '${book.author}', '${book.isbn}', ${book.quantity}, '${book.image || ''}', '${book.price || 0}')">
                 <img src="${book.image || 'https://via.placeholder.com/50x60?text=No+Image'}" alt="${book.title}" class="book-result-image">
                 <div class="book-info">
                     <strong>${book.title}</strong>
-                    <p>${book.author}</p>
-                    <p>ISBN: ${book.isbn}</p>
-                    <small>Có sẵn: ${book.quantity} cuốn</small>
+                    <p><i class="fas fa-user"></i> ${book.author}</p>
+                    <p><i class="fas fa-barcode"></i> ${book.isbn || 'N/A'}</p>
+                    <p><i class="fas fa-tag"></i> ${book.categoryName || 'N/A'}</p>
+                    <small><i class="fas fa-books"></i> Có sẵn: ${book.quantity} cuốn</small>
+                    ${book.price ? `<small><i class="fas fa-money-bill"></i> ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(book.price)}</small>` : ''}
                 </div>
-                <button type="button" class="btn btn-sm btn-outline">Chọn</button>
+                <button type="button" class="btn btn-sm btn-outline">
+                    <i class="fas fa-check"></i> Chọn
+                </button>
             </div>
         `).join('');
         
         resultsDiv.innerHTML = resultsHTML;
     }
 
-    selectBook(id, title, author, isbn, quantity, image) {
+    selectBook(id, title, author, isbn, quantity, image, price) {
         // Hide search results
         document.getElementById('bookResults').innerHTML = '';
         
         // Show selected book
         document.getElementById('selectedBook').style.display = 'block';
-        document.getElementById('selectedBookId').value = id;
         document.getElementById('selectedBookTitle').textContent = title;
         document.getElementById('selectedBookAuthor').textContent = author;
-        document.getElementById('selectedBookISBN').textContent = isbn;
+        document.getElementById('selectedBookISBN').textContent = isbn || 'N/A';
         document.getElementById('selectedBookQuantity').textContent = quantity;
         document.getElementById('selectedBookImage').src = image || 'https://via.placeholder.com/80x100?text=No+Image';
+        // document.getElementById('selectedBookPrice').textContent = price ? 
+        //     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price) : 'N/A';
+        
+        // Store selected book data
+        this.selectedBookData = { id, title, author, isbn, quantity, image, price };
         
         // Clear search input
         document.getElementById('bookSearch').value = '';
+        
+        console.log('Selected book:', this.selectedBookData);
     }
 
     updateExpectedReturnDate() {
-        const borrowDaysInput = document.getElementById('borrowDays');
+        const borrowPeriodInput = document.getElementById('borrowPeriod');
         const expectedDateInput = document.getElementById('expectedReturnDate');
         
-        if (!borrowDaysInput || !expectedDateInput) return;
+        if (!borrowPeriodInput || !expectedDateInput) return;
         
-        const borrowDays = parseInt(borrowDaysInput.value) || 14;
+        const borrowDays = parseInt(borrowPeriodInput.value) || 14;
         const today = new Date();
         const expectedDate = new Date(today.getTime() + borrowDays * 24 * 60 * 60 * 1000);
         
@@ -1432,39 +1417,40 @@ class AdminManager {
     async handleCreateBorrowing(event) {
         event.preventDefault();
         
-        const customerId = document.getElementById('selectedCustomerId').value;
-        const bookId = document.getElementById('selectedBookId').value;
-        const borrowDays = parseInt(document.getElementById('borrowDays').value);
-        const notes = document.getElementById('borrowNotes').value;
-        
-        if (!customerId) {
+        if (!this.selectedCustomerData) {
             this.showAlert('Vui lòng chọn khách hàng', 'warning');
             return;
         }
         
-        if (!bookId) {
+        if (!this.selectedBookData) {
             this.showAlert('Vui lòng chọn sách', 'warning');
             return;
         }
         
-        if (!borrowDays || borrowDays < 1 || borrowDays > 30) {
+        const borrowPeriod = parseInt(document.getElementById('borrowPeriod').value);
+        const notes = document.getElementById('borrowNote').value;
+        
+        if (!borrowPeriod || borrowPeriod < 1 || borrowPeriod > 30) {
             this.showAlert('Số ngày mượn phải từ 1 đến 30 ngày', 'warning');
             return;
         }
         
         try {
+            this.showLoading();
+            
             const borrowingData = {
-                userId: customerId,
-                bookId: bookId,
-                borrowDays: borrowDays,
-                notes: notes,
-                expectedReturnDate: document.getElementById('expectedReturnDate').value
+                email: this.selectedCustomerData.email,
+                bookId: this.selectedBookData.id,
+                period: borrowPeriod, // số ngày
+                note: notes || ''
             };
+            
+            console.log('Creating borrowing with data:', borrowingData);
             
             // Call API to create borrowing
             const result = await this.api.createBorrowing(borrowingData);
             
-            if (result && result.success) {
+            if (result && (result.success || result.id)) {
                 this.showAlert('Tạo giao dịch mượn sách thành công!', 'success');
                 this.resetBorrowingForm();
                 
@@ -1501,12 +1487,18 @@ class AdminManager {
         if (customerResults) customerResults.innerHTML = '';
         if (bookResults) bookResults.innerHTML = '';
         
-        // Reset borrow days and update expected date
-        const borrowDaysInput = document.getElementById('borrowDays');
-        if (borrowDaysInput) {
-            borrowDaysInput.value = 14;
+        // Reset selected data
+        this.selectedCustomerData = null;
+        this.selectedBookData = null;
+        
+        // Reset borrow period and update expected date
+        const borrowPeriodInput = document.getElementById('borrowPeriod');
+        if (borrowPeriodInput) {
+            borrowPeriodInput.value = 14;
             this.updateExpectedReturnDate();
         }
+        
+        console.log('Borrowing form reset');
     }
 }
 
@@ -1728,5 +1720,12 @@ function editCategory(categoryId) {
 function deleteCategory(categoryId) {
     if (window.adminManager) {
         window.adminManager.deleteCategory(categoryId);
+    }
+}
+
+// Global function for updating expected return date
+function updateExpectedReturnDate() {
+    if (window.adminManager) {
+        window.adminManager.updateExpectedReturnDate();
     }
 }
