@@ -397,7 +397,6 @@ class AdminManager {
             <tr>
                 <td>${category.id}</td>
                 <td>${category.name}</td>
-                <td>-</td>
                 <td>
                     <div class="table-actions">
                         <button class="btn btn-sm btn-outline" onclick="editCategory('${category.id}')" title="Sửa">

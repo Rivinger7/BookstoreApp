@@ -204,7 +204,7 @@
                             <tr>
                                 <th>ID</th>
                                 <th>Tên thể loại</th>
-                                <th>Số lượng sách</th>
+                                <!-- <th>Số lượng sách</th> -->
                                 <th>Thao tác</th>
                             </tr>
                         </thead>
@@ -272,7 +272,7 @@
                                 <div class="form-group">
                                     <label>Tìm khách hàng <span class="required">*</span></label>
                                     <div class="search-customer">
-                                        <input type="text" id="customerSearch" placeholder="Nhập email hoặc tên khách hàng..." required>
+                                        <input type="text" id="customerSearch" placeholder="Nhập email hoặc tên khách hàng...">
                                         <button type="button" class="btn btn-outline" onclick="searchCustomer()">
                                             <i class="fas fa-search"></i> Tìm
                                         </button>
@@ -285,7 +285,7 @@
                                 <div class="customer-info">
                                     <p><strong>Họ tên:</strong> <span id="selectedCustomerName"></span></p>
                                     <p><strong>Email:</strong> <span id="selectedCustomerEmail"></span></p>
-                                    <p><strong>Số sách đang mượn:</strong> <span id="selectedCustomerBooksCount">0</span></p>
+                                    <!-- <p><strong>Số sách đang mượn:</strong> <span id="selectedCustomerBooksCount">0</span></p> -->
                                 </div>
                                 <input type="hidden" id="selectedCustomerId">
                             </div>
@@ -297,7 +297,7 @@
                                 <div class="form-group">
                                     <label>Tìm sách <span class="required">*</span></label>
                                     <div class="search-book">
-                                        <input type="text" id="bookSearch" placeholder="Nhập tên sách, tác giả hoặc ISBN..." required>
+                                        <input type="text" id="bookSearch" placeholder="Nhập tên sách, tác giả hoặc ISBN...">
                                         <button type="button" class="btn btn-outline" onclick="searchBook()">
                                             <i class="fas fa-search"></i> Tìm
                                         </button>
