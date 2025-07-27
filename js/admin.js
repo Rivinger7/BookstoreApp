@@ -473,25 +473,60 @@ class AdminManager {
         try {
             this.showLoading();
             
-            // Sử dụng API template - uncomment khi có backend thực
-            // const result = await api.getUsers({
-            //     page: this.currentPage.users,
-            //     limit: this.pageSize,
-            //     search: document.getElementById('userSearchInput')?.value
-            // });
+            // Nếu chưa có data hoặc cần refresh, load từ API
+            if (this.allUsers.length === 0) {
+                const result = await this.api.getUsers({ page: 1, pageSize: 1000 }); // Load all users
+                
+                // Chuyển đổi structure mới: API trả về array của objects với format {users: {id, username, email, fullName}, borrowQuantity}
+                this.allUsers = result.users ? result.users.map(item => ({
+                    id: item.users.id,
+                    name: item.users.fullName || item.users.username,
+                    email: item.users.email,
+                    username: item.users.username,
+                    createdAt: new Date().toISOString(), // API không trả về createdAt, dùng tạm
+                    borrowingCount: item.borrowQuantity || 0,
+                    status: 'active' // API không trả về status, default active
+                })) : [];
+            }
             
-            // Mock data for demo
-            const result = await this.getMockUsersData();
-            
-            this.renderUsersTable(result.users);
-            this.renderPagination('users', result.totalPages, this.currentPage.users);
+            // Apply frontend search and filter
+            this.applyUsersFilter();
             
         } catch (error) {
             console.error('Load users data error:', error);
             this.showAlert('Không thể tải dữ liệu người dùng', 'error');
+            
+            // Fallback to mock data if API fails
+            const result = await this.getMockUsersData();
+            this.renderUsersTable(result.users);
+            this.renderPagination('users', result.totalPages, this.currentPage.users);
         } finally {
             this.hideLoading();
         }
+    }
+    
+    applyUsersFilter() {
+        let filteredUsers = [...this.allUsers];
+        
+        // Apply search filter
+        const searchInput = document.getElementById('userSearchInput');
+        const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        if (searchTerm) {
+            filteredUsers = filteredUsers.filter(user => 
+                user.name.toLowerCase().includes(searchTerm) ||
+                user.email.toLowerCase().includes(searchTerm) ||
+                user.username?.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        // Apply pagination
+        const totalPages = Math.ceil(filteredUsers.length / this.pageSize);
+        const startIndex = (this.currentPage.users - 1) * this.pageSize;
+        const endIndex = startIndex + this.pageSize;
+        const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+        
+        this.renderUsersTable(paginatedUsers);
+        this.renderPagination('users', totalPages, this.currentPage.users);
     }
 
     renderUsersTable(users) {
@@ -506,15 +541,10 @@ class AdminManager {
                 <td>${this.formatDate(user.createdAt)}</td>
                 <td>${user.borrowingCount || 0}</td>
                 <td>
-                    <span class="status-badge ${user.status === 'active' ? 'status-active' : 'status-inactive'}">
-                        ${user.status === 'active' ? 'Hoạt động' : 'Tạm khóa'}
-                    </span>
-                </td>
-                <td>
                     <div class="table-actions">
-                        <button class="btn btn-sm ${user.status === 'active' ? 'btn-danger' : 'btn-success'}" 
-                                onclick="toggleUserStatus(${user.id}, '${user.status}')">
-                            ${user.status === 'active' ? 'Khóa' : 'Mở khóa'}
+                        <button class="btn btn-sm btn-danger" 
+                                onclick="deleteUser('${user.id}')" title="Xóa người dùng">
+                            <i class="fas fa-trash"></i>
                         </button>
                     </div>
                 </td>
@@ -753,6 +783,28 @@ class AdminManager {
         }
     }
 
+    async deleteUser(userId) {
+        if (confirm('Bạn có chắc chắn muốn xóa người dùng này? Hành động này không thể hoàn tác.')) {
+            try {
+                this.showLoading();
+                
+                await this.api.deleteUser(userId);
+                
+                this.showAlert('Xóa người dùng thành công', 'success');
+                
+                // Remove from local array and refresh view
+                this.allUsers = this.allUsers.filter(user => user.id !== userId);
+                this.applyUsersFilter();
+                
+            } catch (error) {
+                console.error('Delete user error:', error);
+                this.showAlert('Không thể xóa người dùng', 'error');
+            } finally {
+                this.hideLoading();
+            }
+        }
+    }
+
     async editCategory(categoryId) {
         try {
             this.showLoading();
@@ -835,8 +887,10 @@ class AdminManager {
         const searchInput = document.getElementById('userSearchInput');
         const searchTerm = searchInput ? searchInput.value.trim() : '';
         console.log('Search users:', searchTerm);
-        // TODO: Implement search functionality
-        this.loadUsersData();
+        
+        // Reset to first page when searching
+        this.currentPage.users = 1;
+        this.applyUsersFilter();
     }
 
     searchBorrowingsAdmin() {
@@ -1602,7 +1656,7 @@ function changePage(type, page) {
             window.adminManager.applyCategoriesFilter();
             break;
         case 'users':
-            window.adminManager.loadUsersData();
+            window.adminManager.applyUsersFilter();
             break;
         case 'borrowings':
             window.adminManager.loadBorrowingsData();
@@ -1660,6 +1714,12 @@ function editBook(bookId) {
 function deleteBook(bookId) {
     if (window.adminManager) {
         window.adminManager.deleteBook(bookId);
+    }
+}
+
+function deleteUser(userId) {
+    if (window.adminManager) {
+        window.adminManager.deleteUser(userId);
     }
 }
 

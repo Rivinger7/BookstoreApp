@@ -432,10 +432,7 @@ class API {
     // USERS API Templates (Admin only)
     async getUsers(params = {}) {
         try {
-            const queryString = new URLSearchParams(params).toString();
-            const url = `${this.AUTH_BASE_URL}/users${queryString ? '?' + queryString : ''}`;
-            
-            const response = await fetch(url, {
+            const response = await fetch(`${this.AUTH_BASE_URL}/user`, {
                 method: 'GET',
                 headers: this.getHeaders()
             });
@@ -443,6 +440,34 @@ class API {
             return await this.handleResponse(response);
         } catch (error) {
             console.error('Get users error:', error);
+            throw error;
+        }
+    }
+    
+    async getSingleUser(username) {
+        try {
+            const response = await fetch(`${this.AUTH_BASE_URL}/user/${username}`, {
+                method: 'GET',
+                headers: this.getHeaders()
+            });
+            
+            return await this.handleResponse(response);
+        } catch (error) {
+            console.error('Get single user error:', error);
+            throw error;
+        }
+    }
+
+    async deleteUser(userId) {
+        try {
+            const response = await fetch(`${this.AUTH_BASE_URL}/user/${userId}`, {
+                method: 'DELETE',
+                headers: this.getHeaders()
+            });
+            
+            return await this.handleResponse(response);
+        } catch (error) {
+            console.error('Delete user error:', error);
             throw error;
         }
     }
