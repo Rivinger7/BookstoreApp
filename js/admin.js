@@ -197,10 +197,10 @@ class AdminManager {
             // Reset dropdown, giữ lại option "Tất cả thể loại"
             categoryFilter.innerHTML = '<option value="">Tất cả thể loại</option>';
             
-            // Thêm categories từ API
+            // Thêm categories từ API - sử dụng name thay vì ID để dễ match với book data
             categories.forEach(category => {
                 const option = document.createElement('option');
-                option.value = category.id; // Sử dụng GUID ID
+                option.value = category.name; // Sử dụng name thay vì ID
                 option.textContent = category.name;
                 categoryFilter.appendChild(option);
             });
@@ -323,7 +323,17 @@ class AdminManager {
         const categoryFilter = document.getElementById('categoryFilter');
         const categoryValue = categoryFilter ? categoryFilter.value : '';
         if (categoryValue) {
-            filteredBooks = filteredBooks.filter(book => book.category === categoryValue);
+            console.log('Filtering by category:', categoryValue);
+            console.log('Sample book data:', this.allBooks[0]);
+            filteredBooks = filteredBooks.filter(book => {
+                // So sánh với categoryName vì dropdown value là category name
+                const match = book.categoryName === categoryValue;
+                if (!match && this.allBooks.indexOf(book) < 3) {
+                    console.log(`Book "${book.title}" category "${book.categoryName}" does not match "${categoryValue}"`);
+                }
+                return match;
+            });
+            console.log('Filtered books count:', filteredBooks.length);
         }
         
         // Apply status filter
