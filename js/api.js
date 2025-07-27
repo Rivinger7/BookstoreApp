@@ -366,8 +366,8 @@ class API {
 
     async returnBook(borrowingId) {
         try {
-            const response = await fetch(`${this.BOOK_BASE_URL}/borrowings/${borrowingId}/return`, {
-                method: 'POST',
+            const response = await fetch(`${this.BORROW_BASE_URL}/borrow/${borrowingId}`, {
+                method: 'PUT',
                 headers: this.getHeaders()
             });
             
@@ -381,7 +381,7 @@ class API {
     async getBorrowings(params = {}) {
         try {
             const queryString = new URLSearchParams(params).toString();
-            const url = `${this.BOOK_BASE_URL}/borrowings${queryString ? '?' + queryString : ''}`;
+            const url = `${this.BORROW_BASE_URL}/borrow${queryString ? '?' + queryString : ''}`;
             
             const response = await fetch(url, {
                 method: 'GET',

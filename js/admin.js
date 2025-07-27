@@ -240,20 +240,48 @@ class AdminManager {
 
     async loadDashboardData() {
         try {
-            // Sử dụng API template - uncomment khi có backend thực
-            // const stats = await api.getDashboardStats();
-            // const activities = await api.getRecentActivities();
+            // Load actual data from APIs
+            const [booksResponse, usersResponse, borrowingsResponse] = await Promise.all([
+                this.api.getBooks({ page: 1, pageSize: 1 }), // Just to get total count
+                this.api.getUsers({ page: 1, pageSize: 1 }),   // Just to get total count
+                this.api.getBorrowings({ page: 1, pageSize: 1000 }) // Get all to calculate stats
+            ]);
             
-            // Mock data for demo
+            const stats = {
+                totalBooks: booksResponse?.totalCount || 0,
+                totalUsers: usersResponse?.totalCount || 0,
+                activeBorrowings: 0,
+                todayReturns: 0
+            };
+            
+            // Calculate active borrowings and today returns from borrowings data
+            if (borrowingsResponse?.success && borrowingsResponse.borrowRecords) {
+                const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-'); // DD-MM-YYYY format
+                
+                borrowingsResponse.borrowRecords.forEach(borrowing => {
+                    if (borrowing.status === 'Borrowing') {
+                        stats.activeBorrowings++;
+                    }
+                    if (borrowing.actualReturnDate === today) {
+                        stats.todayReturns++;
+                    }
+                });
+            }
+            
+            this.updateDashboardStats(stats);
+            
+            // For now, use mock activities until we have a real API
+            const activities = await this.getMockRecentActivities();
+            this.updateRecentActivities(activities);
+            
+        } catch (error) {
+            console.error('Load dashboard data error:', error);
+            // Fallback to mock data
             const stats = await this.getMockDashboardStats();
             const activities = await this.getMockRecentActivities();
             
             this.updateDashboardStats(stats);
             this.updateRecentActivities(activities);
-            
-        } catch (error) {
-            console.error('Load dashboard data error:', error);
-            this.showAlert('Không thể tải dữ liệu dashboard', 'error');
         }
     }
 
@@ -557,27 +585,84 @@ class AdminManager {
     async loadBorrowingsData() {
         try {
             this.showLoading();
+            console.log('Loading borrowings data...');
             
-            // Sử dụng API template - uncomment khi có backend thực
-            // const result = await api.getBorrowings({
-            //     page: this.currentPage.borrowings,
-            //     limit: this.pageSize,
-            //     status: document.getElementById('borrowingStatusFilter')?.value,
-            //     search: document.getElementById('borrowingSearchInput')?.value
-            // });
+            // Call actual API to get borrowings
+            const response = await this.api.getBorrowings({
+                page: this.currentPage.borrowings,
+                pageSize: this.pageSize
+            });
             
-            // Mock data for demo
-            const result = await this.getMockBorrowingsData();
-            
-            this.renderBorrowingsTable(result.borrowings);
-            this.renderPagination('borrowings', result.totalPages, this.currentPage.borrowings);
+            if (response && response.success) {
+                this.allBorrowings = response.borrowRecords || [];
+                this.totalBorrowings = response.totalCount || 0;
+                console.log('Loaded borrowings:', this.allBorrowings);
+                
+                this.applyBorrowingsFilter();
+            } else {
+                throw new Error(response?.message || 'Failed to load borrowings');
+            }
             
         } catch (error) {
             console.error('Load borrowings data error:', error);
             this.showAlert('Không thể tải dữ liệu mượn trả', 'error');
+            // Fallback to empty data
+            this.allBorrowings = [];
+            this.applyBorrowingsFilter();
         } finally {
             this.hideLoading();
         }
+    }
+
+    applyBorrowingsFilter() {
+        let filteredBorrowings = [...this.allBorrowings];
+        
+        // Apply search filter
+        const searchInput = document.getElementById('borrowingSearchInput');
+        const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        if (searchTerm) {
+            filteredBorrowings = filteredBorrowings.filter(borrowing => 
+                borrowing.fullName?.toLowerCase().includes(searchTerm) ||
+                borrowing.email?.toLowerCase().includes(searchTerm) ||
+                borrowing.bookTitle?.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        // Apply status filter
+        const statusFilter = document.getElementById('borrowingStatusFilter');
+        const statusValue = statusFilter ? statusFilter.value : '';
+        if (statusValue) {
+            filteredBorrowings = filteredBorrowings.filter(borrowing => {
+                const status = borrowing.status?.toLowerCase();
+                switch (statusValue) {
+                    case 'active':
+                        return status === 'borrowing';
+                    case 'returned':
+                        return status === 'returned';
+                    case 'overdue':
+                        // Check if borrowing is overdue (past expectedReturnDate and not returned)
+                        if (status === 'borrowing') {
+                            const dateParts = borrowing.expectedReturnDate.split('-');
+                            const expectedDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]); // DD-MM-YYYY
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0); // Reset time for comparison
+                            return expectedDate < today;
+                        }
+                        return false;
+                    default:
+                        return true;
+                }
+            });
+        }
+        
+        // Apply pagination
+        const totalPages = Math.ceil(filteredBorrowings.length / this.pageSize);
+        const startIndex = (this.currentPage.borrowings - 1) * this.pageSize;
+        const endIndex = startIndex + this.pageSize;
+        const paginatedBorrowings = filteredBorrowings.slice(startIndex, endIndex);
+        
+        this.renderBorrowingsTable(paginatedBorrowings);
+        this.renderPagination('borrowings', totalPages, this.currentPage.borrowings);
     }
 
     renderBorrowingsTable(borrowings) {
@@ -587,11 +672,11 @@ class AdminManager {
         const borrowingsHTML = borrowings.map(borrowing => `
             <tr>
                 <td>${borrowing.id}</td>
-                <td>${borrowing.userName}</td>
+                <td>${borrowing.fullName}</td>
                 <td>${borrowing.bookTitle}</td>
-                <td>${this.formatDate(borrowing.borrowDate)}</td>
-                <td>${this.formatDate(borrowing.dueDate)}</td>
-                <td>${borrowing.returnDate ? this.formatDate(borrowing.returnDate) : '-'}</td>
+                <td>${borrowing.borrowDate}</td>
+                <td>${borrowing.expectedReturnDate}</td>
+                <td>${borrowing.actualReturnDate || '-'}</td>
                 <td>
                     <span class="status-badge ${this.getBorrowingStatusClass(borrowing.status)}">
                         ${this.getBorrowingStatusText(borrowing.status)}
@@ -599,8 +684,8 @@ class AdminManager {
                 </td>
                 <td>
                     <div class="table-actions">
-                        ${borrowing.status === 'active' ? `
-                            <button class="btn btn-sm btn-success" onclick="returnBook(${borrowing.id})">
+                        ${borrowing.status === 'Borrowing' ? `
+                            <button class="btn btn-sm btn-success" onclick="returnBook('${borrowing.id}')">
                                 Trả sách
                             </button>
                         ` : ''}
@@ -610,6 +695,29 @@ class AdminManager {
         `).join('');
 
         tbody.innerHTML = borrowingsHTML;
+    }
+
+    async returnBook(borrowingId) {
+        try {
+            this.showLoading();
+            
+            // Call API to return book
+            const response = await this.api.returnBook(borrowingId);
+            
+            if (response && response.success) {
+                this.showAlert('Trả sách thành công', 'success');
+                // Reload borrowings data to reflect changes
+                await this.loadBorrowingsData();
+            } else {
+                throw new Error(response?.message || 'Failed to return book');
+            }
+            
+        } catch (error) {
+            console.error('Error returning book:', error);
+            this.showAlert(error.message || 'Lỗi khi trả sách', 'error');
+        } finally {
+            this.hideLoading();
+        }
     }
 
     async loadReportsData() {
@@ -897,8 +1005,9 @@ class AdminManager {
         const searchInput = document.getElementById('borrowingSearchInput');
         const searchTerm = searchInput ? searchInput.value.trim() : '';
         console.log('Search borrowings:', searchTerm);
-        // TODO: Implement search functionality
-        this.loadBorrowingsData();
+        // Reset to first page when searching
+        this.currentPage.borrowings = 1;
+        this.applyBorrowingsFilter();
     }
 
     searchCategoriesAdmin() {
@@ -1104,21 +1213,23 @@ class AdminManager {
     }
 
     getBorrowingStatusClass(status) {
+        const statusLower = status?.toLowerCase();
         const classes = {
-            'active': 'status-active',
+            'borrowing': 'status-active',
             'returned': 'status-returned',
             'overdue': 'status-overdue'
         };
-        return classes[status] || 'status-active';
+        return classes[statusLower] || 'status-active';
     }
 
     getBorrowingStatusText(status) {
+        const statusLower = status?.toLowerCase();
         const texts = {
-            'active': 'Đang mượn',
+            'borrowing': 'Đang mượn',
             'returned': 'Đã trả',
             'overdue': 'Quá hạn'
         };
-        return texts[status] || status;
+        return texts[statusLower] || status;
     }
 
     formatDate(date) {
@@ -1641,7 +1752,9 @@ function toggleUserStatus(userId, currentStatus) {
 
 function returnBook(borrowingId) {
     if (confirm('Xác nhận trả sách?')) {
-        window.adminManager.showAlert('Tính năng trả sách đang phát triển', 'warning');
+        if (window.adminManager) {
+            window.adminManager.returnBook(borrowingId);
+        }
     }
 }
 
@@ -1659,7 +1772,7 @@ function changePage(type, page) {
             window.adminManager.applyUsersFilter();
             break;
         case 'borrowings':
-            window.adminManager.loadBorrowingsData();
+            window.adminManager.applyBorrowingsFilter();
             break;
     }
 }
