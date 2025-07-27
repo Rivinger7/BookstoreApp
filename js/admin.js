@@ -10,6 +10,13 @@ class AdminManager {
             categories: 1
         };
         this.pageSize = 10;
+        
+        // Data storage for frontend filtering
+        this.allBooks = [];
+        this.allUsers = [];
+        this.allBorrowings = [];
+        this.allCategories = [];
+        
         this.init();
     }
 
@@ -97,9 +104,12 @@ class AdminManager {
             const filter = document.getElementById(filterId);
             if (filter) {
                 filter.addEventListener('change', () => {
-                    if (filterId.includes('book') || filterId === 'categoryFilter' || filterId === 'statusFilter') {
-                        this.loadBooksData();
-                    } else if (filterId.includes('borrowing')) {
+                    if (filterId === 'categoryFilter' || filterId === 'statusFilter') {
+                        // Reset to first page when filtering
+                        this.currentPage.books = 1;
+                        this.applyBooksFilter();
+                    } else if (filterId === 'borrowingStatusFilter') {
+                        this.currentPage.borrowings = 1;
                         this.loadBorrowingsData();
                     }
                 });
@@ -277,38 +287,14 @@ class AdminManager {
         try {
             this.showLoading();
             
-            // Sử dụng API thực tế
-            const params = {
-                page: this.currentPage.books,
-                pageSize: this.pageSize
-            };
-            
-            // Thêm search và filter nếu có
-            const searchInput = document.getElementById('bookSearchInput');
-            if (searchInput && searchInput.value.trim()) {
-                params.search = searchInput.value.trim();
+            // Nếu chưa có data hoặc cần refresh, load từ API
+            if (this.allBooks.length === 0) {
+                const result = await this.api.getBooks({ page: 1, pageSize: 1000 }); // Load all books
+                this.allBooks = result.books || [];
             }
             
-            const categoryFilter = document.getElementById('categoryFilter');
-            if (categoryFilter && categoryFilter.value) {
-                params.category = categoryFilter.value;
-            }
-            
-            const statusFilter = document.getElementById('statusFilter');
-            if (statusFilter && statusFilter.value) {
-                params.status = statusFilter.value;
-            }
-            
-            const result = await this.api.getBooks(params);
-            console.log('Books API result:', result);
-            
-            // Xử lý response từ API mới
-            const books = result.books || [];
-            const totalCount = result.totalCount || 0;
-            const totalPages = Math.ceil(totalCount / this.pageSize);
-            
-            this.renderBooksTable(books);
-            this.renderPagination('books', totalPages, this.currentPage.books);
+            // Apply frontend search and filter
+            this.applyBooksFilter();
             
         } catch (error) {
             console.error('Load books data error:', error);
@@ -316,6 +302,49 @@ class AdminManager {
         } finally {
             this.hideLoading();
         }
+    }
+    
+    applyBooksFilter() {
+        let filteredBooks = [...this.allBooks];
+        
+        // Apply search filter
+        const searchInput = document.getElementById('bookSearchInput');
+        const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        if (searchTerm) {
+            filteredBooks = filteredBooks.filter(book => 
+                book.title.toLowerCase().includes(searchTerm) ||
+                book.author.toLowerCase().includes(searchTerm) ||
+                book.isbn?.toLowerCase().includes(searchTerm) ||
+                book.categoryName?.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        // Apply category filter
+        const categoryFilter = document.getElementById('categoryFilter');
+        const categoryValue = categoryFilter ? categoryFilter.value : '';
+        if (categoryValue) {
+            filteredBooks = filteredBooks.filter(book => book.category === categoryValue);
+        }
+        
+        // Apply status filter
+        const statusFilter = document.getElementById('statusFilter');
+        const statusValue = statusFilter ? statusFilter.value : '';
+        if (statusValue) {
+            if (statusValue === 'available') {
+                filteredBooks = filteredBooks.filter(book => book.quantity > 0);
+            } else if (statusValue === 'borrowed') {
+                filteredBooks = filteredBooks.filter(book => book.quantity === 0);
+            }
+        }
+        
+        // Apply pagination
+        const totalPages = Math.ceil(filteredBooks.length / this.pageSize);
+        const startIndex = (this.currentPage.books - 1) * this.pageSize;
+        const endIndex = startIndex + this.pageSize;
+        const paginatedBooks = filteredBooks.slice(startIndex, endIndex);
+        
+        this.renderBooksTable(paginatedBooks);
+        this.renderPagination('books', totalPages, this.currentPage.books);
     }
 
     renderBooksTable(books) {
@@ -361,30 +390,47 @@ class AdminManager {
         try {
             this.showLoading();
             
-            const searchTerm = document.getElementById('categorySearchInput')?.value || '';
-            const result = await this.api.getCategories();
-            
-            if (result.success) {
-                let categories = result.categories || [];
-                
-                // Filter by search term if provided
-                if (searchTerm) {
-                    categories = categories.filter(category => 
-                        category.name.toLowerCase().includes(searchTerm.toLowerCase())
-                    );
+            // Nếu chưa có data hoặc cần refresh, load từ API
+            if (this.allCategories.length === 0) {
+                const result = await this.api.getCategories();
+                if (result.success) {
+                    this.allCategories = result.categories || [];
+                } else {
+                    throw new Error(result.message || 'Failed to load categories');
                 }
-                
-                this.renderCategoriesTable(categories);
-                console.log('Categories loaded successfully:', categories.length);
-            } else {
-                throw new Error(result.message || 'Failed to load categories');
             }
+            
+            // Apply frontend search filter
+            this.applyCategoriesFilter();
+            
         } catch (error) {
             console.error('Error loading categories:', error);
             this.showAlert('Lỗi khi tải danh sách thể loại: ' + error.message, 'error');
         } finally {
             this.hideLoading();
         }
+    }
+    
+    applyCategoriesFilter() {
+        let filteredCategories = [...this.allCategories];
+        
+        // Apply search filter
+        const searchInput = document.getElementById('categorySearchInput');
+        const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        if (searchTerm) {
+            filteredCategories = filteredCategories.filter(category => 
+                category.name.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        // Apply pagination
+        const totalPages = Math.ceil(filteredCategories.length / this.pageSize);
+        const startIndex = (this.currentPage.categories - 1) * this.pageSize;
+        const endIndex = startIndex + this.pageSize;
+        const paginatedCategories = filteredCategories.slice(startIndex, endIndex);
+        
+        this.renderCategoriesTable(paginatedCategories);
+        this.renderPagination('categories', totalPages, this.currentPage.categories);
     }
 
     renderCategoriesTable(categories) {
@@ -769,8 +815,10 @@ class AdminManager {
         const searchInput = document.getElementById('bookSearchInput');
         const searchTerm = searchInput ? searchInput.value.trim() : '';
         console.log('Search books:', searchTerm);
-        // TODO: Implement search functionality
-        this.loadBooksData();
+        
+        // Reset to first page when searching
+        this.currentPage.books = 1;
+        this.applyBooksFilter();
     }
 
     searchUsersAdmin() {
@@ -793,7 +841,10 @@ class AdminManager {
         const searchInput = document.getElementById('categorySearchInput');
         const searchTerm = searchInput ? searchInput.value.trim() : '';
         console.log('Search categories:', searchTerm);
-        this.loadCategoriesData();
+        
+        // Reset to first page when searching
+        this.currentPage.categories = 1;
+        this.applyCategoriesFilter();
     }
 
     // Pagination and UI methods
@@ -1535,10 +1586,10 @@ function changePage(type, page) {
     
     switch (type) {
         case 'books':
-            window.adminManager.loadBooksData();
+            window.adminManager.applyBooksFilter();
             break;
         case 'categories':
-            window.adminManager.loadCategoriesData();
+            window.adminManager.applyCategoriesFilter();
             break;
         case 'users':
             window.adminManager.loadUsersData();
