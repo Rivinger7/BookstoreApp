@@ -331,11 +331,11 @@ class AdminManager {
             { label: 'Đang mượn', value: stats.activeBorrowings, color: '#f39c12', hoverColor: '#e67e22' },
             { label: 'Trả trong ngày', value: stats.todayReturns, color: '#9b59b6', hoverColor: '#8e44ad' },
             { label: 'Tổng quá hạn', value: stats.overdueBooks, color: '#e74c3c', hoverColor: '#c0392b' },
-            { label: 'Tổng đã trả', value: stats.totalReturned, color: '#1abc9c', hoverColor: '#16a085' }
+            { label: 'Tổng đã trả trước hôm nay', value: stats.totalReturned, color: '#1abc9c', hoverColor: '#16a085' }
         ];
 
         // Calculate chart dimensions with better spacing
-        const chartWidth = width - 120;
+        const chartWidth = width - 80;
         const chartHeight = height - 120;
         const maxValue = Math.max(...data.map(d => d.value), 1);
         const barWidth = chartWidth / data.length - 30;

@@ -1555,7 +1555,7 @@ function showBookDetail(bookId) {
                     </div>
                     <div class="book-description">
                         <h4>Mô tả:</h4>
-                        <p>${book.description}</p>
+                        <p>Sách này hiện chưa có mô tả, hihi >.<</p>
                     </div>
                     <div class="book-actions">
                         <button class="btn btn-outline" onclick="closeModal('bookModal')">
