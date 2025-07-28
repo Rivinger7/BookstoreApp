@@ -241,47 +241,36 @@ class AdminManager {
     async loadDashboardData() {
         try {
             // Load actual data from APIs
-            const [booksResponse, usersResponse, borrowingsResponse] = await Promise.all([
-                this.api.getBooks({ page: 1, pageSize: 1 }), // Just to get total count
-                this.api.getUsers({ page: 1, pageSize: 1 }),   // Just to get total count
-                this.api.getBorrowings({ page: 1, pageSize: 1000 }) // Get all to calculate stats
+            const [userResponse, booksResponse, borrowResponse] = await Promise.all([
+                this.api.getUserDashboard(),
+                this.api.getBooksDashboard(),
+                this.api.getBorrowDashboard()
             ]);
             
             const stats = {
-                totalBooks: booksResponse?.totalCount || 0,
-                totalUsers: usersResponse?.totalCount || 0,
-                activeBorrowings: 0,
-                todayReturns: 0
+                totalBooks: booksResponse?.quantity || 0,
+                totalUsers: userResponse?.quantity || 0,
+                activeBorrowings: borrowResponse?.borrowQuantity || 0,
+                todayReturns: borrowResponse?.returnedInDayQuantity || 0,
+                overdueBooks: borrowResponse?.overdueQuantity || 0
             };
             
-            // Calculate active borrowings and today returns from borrowings data
-            if (borrowingsResponse?.success && borrowingsResponse.borrowRecords) {
-                const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-'); // DD-MM-YYYY format
-                
-                borrowingsResponse.borrowRecords.forEach(borrowing => {
-                    if (borrowing.status === 'Borrowing') {
-                        stats.activeBorrowings++;
-                    }
-                    if (borrowing.actualReturnDate === today) {
-                        stats.todayReturns++;
-                    }
-                });
-            }
-            
             this.updateDashboardStats(stats);
-            
-            // For now, use mock activities until we have a real API
-            const activities = await this.getMockRecentActivities();
-            this.updateRecentActivities(activities);
+            this.createDashboardChart(stats);
             
         } catch (error) {
             console.error('Load dashboard data error:', error);
-            // Fallback to mock data
-            const stats = await this.getMockDashboardStats();
-            const activities = await this.getMockRecentActivities();
+            // Fallback to zero values
+            const stats = {
+                totalBooks: 0,
+                totalUsers: 0,
+                activeBorrowings: 0,
+                todayReturns: 0,
+                overdueBooks: 0
+            };
             
             this.updateDashboardStats(stats);
-            this.updateRecentActivities(activities);
+            this.createDashboardChart(stats);
         }
     }
 
@@ -290,25 +279,264 @@ class AdminManager {
         document.getElementById('totalUsers').textContent = stats.totalUsers || 0;
         document.getElementById('activeBorrowings').textContent = stats.activeBorrowings || 0;
         document.getElementById('todayReturns').textContent = stats.todayReturns || 0;
+        document.getElementById('overdueBooks').textContent = stats.overdueBooks || 0;
     }
 
-    updateRecentActivities(activities) {
-        const container = document.getElementById('recentActivities');
-        if (!container) return;
+    createDashboardChart(stats) {
+        this.createOverviewChart(stats);
+        this.createStatusPieChart(stats);
+        this.createComparisonChart(stats);
+    }
 
-        const activitiesHTML = activities.map(activity => `
-            <div class="activity-item">
-                <div class="activity-icon">
-                    <i class="${activity.icon}"></i>
-                </div>
-                <div class="activity-content">
-                    <div class="activity-title">${activity.title}</div>
-                    <div class="activity-time">${this.formatTimeAgo(activity.time)}</div>
-                </div>
-            </div>
-        `).join('');
+    createOverviewChart(stats) {
+        const canvas = document.getElementById('overviewChart');
+        if (!canvas) return;
 
-        container.innerHTML = activitiesHTML;
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // Clear canvas
+        ctx.clearRect(0, 0, width, height);
+
+        // Enhanced gradient background
+        const gradient = ctx.createLinearGradient(0, 0, 0, height);
+        gradient.addColorStop(0, '#f8f9fa');
+        gradient.addColorStop(1, '#e9ecef');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+
+        // Data for chart with better colors
+        const data = [
+            { label: 'Tổng sách', value: stats.totalBooks, color: '#3498db', hoverColor: '#2980b9' },
+            { label: 'Người dùng', value: stats.totalUsers, color: '#2ecc71', hoverColor: '#27ae60' },
+            { label: 'Đang mượn', value: stats.activeBorrowings, color: '#f39c12', hoverColor: '#e67e22' },
+            { label: 'Trả hôm nay', value: stats.todayReturns, color: '#9b59b6', hoverColor: '#8e44ad' },
+            { label: 'Quá hạn', value: stats.overdueBooks, color: '#e74c3c', hoverColor: '#c0392b' }
+        ];
+
+        // Calculate chart dimensions with better spacing
+        const chartWidth = width - 120;
+        const chartHeight = height - 120;
+        const maxValue = Math.max(...data.map(d => d.value), 1);
+        const barWidth = chartWidth / data.length - 30;
+        const startX = 80;
+        const startY = height - 60;
+
+        // Draw grid lines
+        ctx.strokeStyle = '#dee2e6';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 5; i++) {
+            const y = startY - (chartHeight * i / 5);
+            ctx.beginPath();
+            ctx.moveTo(startX - 10, y);
+            ctx.lineTo(startX + chartWidth, y);
+            ctx.stroke();
+            
+            // Y-axis labels
+            ctx.fillStyle = '#6c757d';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'right';
+            ctx.fillText(Math.round(maxValue * i / 5), startX - 15, y + 4);
+        }
+
+        // Draw bars with enhanced styling
+        data.forEach((item, index) => {
+            const barHeight = Math.max((item.value / maxValue) * chartHeight, 5);
+            const x = startX + index * (barWidth + 30);
+            const y = startY - barHeight;
+
+            // Create gradient for bars
+            const barGradient = ctx.createLinearGradient(0, y, 0, startY);
+            barGradient.addColorStop(0, item.color);
+            barGradient.addColorStop(1, item.hoverColor);
+
+            // Draw bar with rounded corners
+            ctx.fillStyle = barGradient;
+            this.drawRoundedRect(ctx, x, y, barWidth, barHeight, 8);
+
+            // Draw value on top with background
+            ctx.fillStyle = '#ffffff';
+            const valueText = item.value.toString();
+            const textWidth = ctx.measureText(valueText).width;
+            this.drawRoundedRect(ctx, x + barWidth/2 - textWidth/2 - 8, y - 25, textWidth + 16, 20, 10);
+            
+            ctx.fillStyle = '#2c3e50';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(valueText, x + barWidth / 2, y - 10);
+
+            // Draw label below bar
+            ctx.fillStyle = '#495057';
+            ctx.font = '12px Arial';
+            ctx.fillText(item.label, x + barWidth / 2, startY + 20);
+        });
+
+        // Draw title
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = 'bold 18px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Thống kê tổng quan hệ thống', width / 2, 30);
+    }
+
+    createStatusPieChart(stats) {
+        const canvas = document.getElementById('statusChart');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        ctx.clearRect(0, 0, width, height);
+
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const radius = Math.min(width, height) / 3;
+
+        const data = [
+            { label: 'Đang mượn', value: stats.activeBorrowings, color: '#f39c12' },
+            { label: 'Trả hôm nay', value: stats.todayReturns, color: '#2ecc71' },
+            { label: 'Quá hạn', value: stats.overdueBooks, color: '#e74c3c' }
+        ];
+
+        const total = data.reduce((sum, item) => sum + item.value, 0);
+        if (total === 0) {
+            ctx.fillStyle = '#6c757d';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Không có dữ liệu', centerX, centerY);
+            return;
+        }
+
+        let currentAngle = -Math.PI / 2;
+
+        // Draw pie slices
+        data.forEach((item, index) => {
+            const sliceAngle = (item.value / total) * 2 * Math.PI;
+            
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+            ctx.closePath();
+            ctx.fillStyle = item.color;
+            ctx.fill();
+            
+            // Add border
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Add percentage labels
+            if (item.value > 0) {
+                const labelAngle = currentAngle + sliceAngle / 2;
+                const labelX = centerX + Math.cos(labelAngle) * (radius * 0.7);
+                const labelY = centerY + Math.sin(labelAngle) * (radius * 0.7);
+                
+                const percentage = ((item.value / total) * 100).toFixed(1);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${percentage}%`, labelX, labelY);
+            }
+
+            currentAngle += sliceAngle;
+        });
+
+        // Draw legend
+        let legendY = height - 80;
+        data.forEach((item, index) => {
+            if (item.value > 0) {
+                ctx.fillStyle = item.color;
+                ctx.fillRect(20, legendY, 15, 15);
+                
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText(`${item.label}: ${item.value}`, 45, legendY + 12);
+                
+                legendY += 25;
+            }
+        });
+    }
+
+    createComparisonChart(stats) {
+        const canvas = document.getElementById('comparisonChart');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        ctx.clearRect(0, 0, width, height);
+
+        // Comparison data
+        const comparisons = [
+            { 
+                label: 'Hiệu suất mượn trả',
+                current: stats.todayReturns,
+                target: stats.activeBorrowings,
+                color: '#9b59b6'
+            },
+            {
+                label: 'Tình trạng quá hạn',
+                current: stats.overdueBooks,
+                target: Math.max(stats.activeBorrowings, 1),
+                color: '#e74c3c'
+            }
+        ];
+
+        const barHeight = 40;
+        const barSpacing = 80;
+        const startY = 60;
+
+        comparisons.forEach((comp, index) => {
+            const y = startY + index * barSpacing;
+            const percentage = Math.min((comp.current / comp.target) * 100, 100);
+            const barWidth = (width - 100) * (percentage / 100);
+
+            // Background bar
+            ctx.fillStyle = '#e9ecef';
+            this.drawRoundedRect(ctx, 50, y, width - 100, barHeight, 20);
+
+            // Progress bar
+            ctx.fillStyle = comp.color;
+            this.drawRoundedRect(ctx, 50, y, barWidth, barHeight, 20);
+
+            // Label
+            ctx.fillStyle = '#2c3e50';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(comp.label, 50, y - 10);
+
+            // Percentage
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            if (barWidth > 50) {
+                ctx.fillText(`${percentage.toFixed(1)}%`, 50 + barWidth/2, y + 25);
+            }
+
+            // Values
+            ctx.fillStyle = '#6c757d';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'right';
+            ctx.fillText(`${comp.current}/${comp.target}`, width - 10, y + 25);
+        });
+    }
+
+    drawRoundedRect(ctx, x, y, width, height, radius) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + width - radius, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+        ctx.lineTo(x + width, y + height - radius);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        ctx.lineTo(x + radius, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
+        ctx.fill();
     }
 
     async loadBooksData() {
@@ -1285,30 +1513,6 @@ class AdminManager {
                     activeBorrowings: 127,
                     todayReturns: 23
                 });
-            }, 500);
-        });
-    }
-
-    async getMockRecentActivities() {
-        return new Promise(resolve => {
-            setTimeout(() => {
-                resolve([
-                    {
-                        title: 'Nguyễn Văn A mượn sách "Đắc Nhân Tâm"',
-                        icon: 'fas fa-book',
-                        time: new Date(Date.now() - 10 * 60 * 1000)
-                    },
-                    {
-                        title: 'Trần Thị B trả sách "1984"',
-                        icon: 'fas fa-undo',
-                        time: new Date(Date.now() - 30 * 60 * 1000)
-                    },
-                    {
-                        title: 'Thêm sách mới "Sapiens"',
-                        icon: 'fas fa-plus',
-                        time: new Date(Date.now() - 2 * 60 * 60 * 1000)
-                    }
-                ]);
             }, 500);
         });
     }

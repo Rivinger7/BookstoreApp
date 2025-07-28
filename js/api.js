@@ -509,17 +509,45 @@ class API {
         }
     }
 
-    // DASHBOARD/REPORTS API Templates
-    async getDashboardStats() {
+    // DASHBOARD API
+    async getUserDashboard() {
         try {
-            const response = await fetch(`${this.BOOK_BASE_URL}/dashboard/stats`, {
+            const response = await fetch(`${this.AUTH_BASE_URL}/user/dashboard`, {
                 method: 'GET',
                 headers: this.getHeaders()
             });
             
             return await this.handleResponse(response);
         } catch (error) {
-            console.error('Get dashboard stats error:', error);
+            console.error('Get user dashboard error:', error);
+            throw error;
+        }
+    }
+
+    async getBooksDashboard() {
+        try {
+            const response = await fetch(`${this.BOOK_BASE_URL}/books/dashboard`, {
+                method: 'GET',
+                headers: this.getHeaders()
+            });
+            
+            return await this.handleResponse(response);
+        } catch (error) {
+            console.error('Get books dashboard error:', error);
+            throw error;
+        }
+    }
+
+    async getBorrowDashboard() {
+        try {
+            const response = await fetch(`${this.BORROW_BASE_URL}/borrow/dashboard`, {
+                method: 'GET',
+                headers: this.getHeaders()
+            });
+            
+            return await this.handleResponse(response);
+        } catch (error) {
+            console.error('Get borrow dashboard error:', error);
             throw error;
         }
     }

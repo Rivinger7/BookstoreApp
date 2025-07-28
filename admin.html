@@ -105,17 +105,30 @@
                             <p>Trả hôm nay</p>
                         </div>
                     </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="overdueBooks">0</h3>
+                            <p>Quá hạn</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="dashboard-charts">
-                    <div class="chart-container">
-                        <h3>Thống kê mượn trả theo tháng</h3>
-                        <canvas id="borrowingChart"></canvas>
-                    </div>
-                    <div class="recent-activities">
-                        <h3>Hoạt động gần đây</h3>
-                        <div class="activity-list" id="recentActivities">
-                            <!-- Activities will be loaded here -->
+                    <div class="charts-grid">
+                        <div class="chart-container">
+                            <h3>Thống kê tổng quan</h3>
+                            <canvas id="overviewChart" width="700" height="400"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h3>Phân bố trạng thái mượn sách</h3>
+                            <canvas id="statusChart" width="500" height="400"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h3>So sánh số liệu</h3>
+                            <canvas id="comparisonChart" width="600" height="400"></canvas>
                         </div>
                     </div>
                 </div>
