@@ -48,6 +48,24 @@ class AdminManager {
         }
     }
 
+    logout() {
+        if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+            // Clear localStorage
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('userId');
+            
+            // Show success message
+            this.showAlert('Đăng xuất thành công!', 'success');
+            
+            // Redirect to home page after a short delay
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1000);
+        }
+    }
+
     setupEventListeners() {
         // Sidebar navigation
         document.querySelectorAll('.nav-item').forEach(item => {
@@ -151,9 +169,6 @@ class AdminManager {
                 break;
             case 'borrowings':
                 this.loadBorrowingsData();
-                break;
-            case 'reports':
-                this.loadReportsData();
                 break;
         }
     }
@@ -946,53 +961,6 @@ class AdminManager {
         } finally {
             this.hideLoading();
         }
-    }
-
-    async loadReportsData() {
-        try {
-            // Sử dụng API template - uncomment khi có backend thực
-            // const popularBooks = await api.getPopularBooks(10);
-            // const activeUsers = await api.getActiveUsers(10);
-            
-            // Mock data for demo
-            const popularBooks = await this.getMockPopularBooks();
-            const activeUsers = await this.getMockActiveUsers();
-            
-            this.renderPopularBooks(popularBooks);
-            this.renderActiveUsers(activeUsers);
-            
-        } catch (error) {
-            console.error('Load reports data error:', error);
-            this.showAlert('Không thể tải dữ liệu báo cáo', 'error');
-        }
-    }
-
-    renderPopularBooks(books) {
-        const container = document.getElementById('popularBooks');
-        if (!container) return;
-
-        const booksHTML = books.map((book, index) => `
-            <div class="report-item">
-                <span class="report-item-name">${index + 1}. ${book.title}</span>
-                <span class="report-item-value">${book.borrowCount} lượt mượn</span>
-            </div>
-        `).join('');
-
-        container.innerHTML = booksHTML;
-    }
-
-    renderActiveUsers(users) {
-        const container = document.getElementById('activeUsers');
-        if (!container) return;
-
-        const usersHTML = users.map((user, index) => `
-            <div class="report-item">
-                <span class="report-item-name">${index + 1}. ${user.name}</span>
-                <span class="report-item-value">${user.borrowCount} cuốn sách</span>
-            </div>
-        `).join('');
-
-        container.innerHTML = usersHTML;
     }
 
     // Modal and form methods
@@ -1993,14 +1961,6 @@ function searchBorrowingsAdmin() {
     window.adminManager.loadBorrowingsData();
 }
 
-function generateReport() {
-    window.adminManager.showAlert('Tính năng tạo báo cáo đang phát triển', 'warning');
-}
-
-function exportReport() {
-    window.adminManager.showAlert('Tính năng xuất báo cáo đang phát triển', 'warning');
-}
-
 // Global function for modal closing
 function closeModal(modalId) {
     if (window.adminManager) {
@@ -2164,5 +2124,12 @@ function deleteCategory(categoryId) {
 function updateExpectedReturnDate() {
     if (window.adminManager) {
         window.adminManager.updateExpectedReturnDate();
+    }
+}
+
+// Global function for logout
+function logout() {
+    if (window.adminManager) {
+        window.adminManager.logout();
     }
 }

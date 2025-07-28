@@ -52,9 +52,6 @@
                     <li class="nav-item" data-section="borrowings">
                         <a href="#"><i class="fas fa-exchange-alt"></i> Mượn trả sách</a>
                     </li>
-                    <li class="nav-item" data-section="reports">
-                        <a href="#"><i class="fas fa-chart-bar"></i> Báo cáo</a>
-                    </li>
                 </ul>
             </nav>
         </aside>
@@ -405,45 +402,6 @@
 
                 <div class="pagination" id="borrowingsPagination">
                     <!-- Pagination will be generated here -->
-                </div>
-            </section>
-
-            <!-- Reports Section -->
-            <section class="admin-section" id="reports">
-                <div class="section-header">
-                    <h1>Báo cáo thống kê</h1>
-                </div>
-
-                <div class="report-filters">
-                    <div class="filter-group">
-                        <label>Từ ngày:</label>
-                        <input type="date" id="fromDate">
-                    </div>
-                    <div class="filter-group">
-                        <label>Đến ngày:</label>
-                        <input type="date" id="toDate">
-                    </div>
-                    <button class="btn btn-primary" onclick="generateReport()">
-                        <i class="fas fa-chart-line"></i> Tạo báo cáo
-                    </button>
-                    <button class="btn btn-outline" onclick="exportReport()">
-                        <i class="fas fa-download"></i> Xuất Excel
-                    </button>
-                </div>
-
-                <div class="reports-grid">
-                    <div class="report-card">
-                        <h3>Sách phổ biến nhất</h3>
-                        <div class="report-content" id="popularBooks">
-                            <!-- Popular books will be loaded here -->
-                        </div>
-                    </div>
-                    <div class="report-card">
-                        <h3>Người dùng tích cực</h3>
-                        <div class="report-content" id="activeUsers">
-                            <!-- Active users will be loaded here -->
-                        </div>
-                    </div>
                 </div>
             </section>
         </main>
