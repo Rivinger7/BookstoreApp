@@ -15,7 +15,14 @@ class MainApp {
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', (e) => {
                 e.preventDefault();
-                const target = document.querySelector(anchor.getAttribute('href'));
+                const href = anchor.getAttribute('href');
+                
+                // Skip if href is just "#"
+                if (href === '#') {
+                    return;
+                }
+                
+                const target = document.querySelector(href);
                 if (target) {
                     const headerHeight = document.querySelector('.header').offsetHeight;
                     const targetPosition = target.offsetTop - headerHeight;

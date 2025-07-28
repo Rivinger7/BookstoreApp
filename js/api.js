@@ -88,30 +88,26 @@ class API {
                 this.token = data.token;
                 localStorage.setItem('authToken', data.token);
                 
-                // Decode JWT token để lấy thông tin user
+                // Decode JWT token để lấy thông tin user thực tế
                 const userInfo = this.decodeJWT(data.token);
+                console.log('Decoded JWT user info:', userInfo);
+                
                 const user = {
-                    id: userInfo.nameidentifier || userInfo.sub || username,
+                    id: userInfo.nameidentifier || userInfo.sub || userInfo.id,
                     username: username,
                     role: userInfo.role || 'Borrower',
-                    name: username, // Tạm thời dùng username làm name
-                    email: username + '@example.com', // Tạm thời
+                    name: userInfo.name || userInfo.fullName || username,
+                    email: userInfo.emailaddress || userInfo.email || username,
                     joinDate: new Date().toLocaleDateString('vi-VN')
                 };
+                
+                console.log('Constructed user object:', user);
                 
                 localStorage.setItem('currentUser', JSON.stringify(user));
                 this.currentUser = user;
                 
-                // Thử lấy thông tin user đầy đủ từ server (nếu có API)
-                try {
-                    await this.getUserProfile();
-                } catch (profileError) {
-                    console.log('Could not fetch user profile:', profileError.message);
-                    // Không làm gì, tiếp tục với thông tin từ JWT
-                }
-                
                 // Trả về format cũ để tương thích
-                return { user: this.currentUser, token: data.token, ...data };
+                return { user: this.currentUser, token: data.token, success: true, message: 'Login successful', ...data };
             }
             
             return data;
@@ -410,6 +406,25 @@ class API {
         }
     }
 
+    async getBorrowingHistory(email, page = 1, pageSize = 10) {
+        try {
+            const params = new URLSearchParams({
+                page: page.toString(),
+                pageSize: pageSize.toString()
+            });
+            
+            const response = await fetch(`${this.BORROW_BASE_URL}/borrow/history/${encodeURIComponent(email)}?${params}`, {
+                method: 'GET',
+                headers: this.getHeaders()
+            });
+            
+            return await this.handleResponse(response);
+        } catch (error) {
+            console.error('Get borrowing history error:', error);
+            throw error;
+        }
+    }
+
 
 
     async searchUsers(params = {}) {
@@ -631,6 +646,8 @@ class API {
             return {
                 nameidentifier: payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'],
                 role: payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'],
+                emailaddress: payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'],
+                name: payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'],
                 exp: payload.exp,
                 iss: payload.iss,
                 aud: payload.aud,
