@@ -267,7 +267,8 @@ class AdminManager {
                 totalUsers: userResponse?.quantity || 0,
                 activeBorrowings: borrowResponse?.borrowQuantity || 0,
                 todayReturns: borrowResponse?.returnedInDayQuantity || 0,
-                overdueBooks: borrowResponse?.overdueQuantity || 0
+                overdueBooks: borrowResponse?.overdueQuantity || 0,
+                totalReturned: borrowResponse?.returnedQuantity || 0
             };
             
             this.updateDashboardStats(stats);
@@ -281,7 +282,8 @@ class AdminManager {
                 totalUsers: 0,
                 activeBorrowings: 0,
                 todayReturns: 0,
-                overdueBooks: 0
+                overdueBooks: 0,
+                totalReturned: 0
             };
             
             this.updateDashboardStats(stats);
@@ -295,6 +297,7 @@ class AdminManager {
         document.getElementById('activeBorrowings').textContent = stats.activeBorrowings || 0;
         document.getElementById('todayReturns').textContent = stats.todayReturns || 0;
         document.getElementById('overdueBooks').textContent = stats.overdueBooks || 0;
+        document.getElementById('totalReturned').textContent = stats.totalReturned || 0;
     }
 
     createDashboardChart(stats) {
@@ -326,8 +329,9 @@ class AdminManager {
             { label: 'Tổng sách', value: stats.totalBooks, color: '#3498db', hoverColor: '#2980b9' },
             { label: 'Người dùng', value: stats.totalUsers, color: '#2ecc71', hoverColor: '#27ae60' },
             { label: 'Đang mượn', value: stats.activeBorrowings, color: '#f39c12', hoverColor: '#e67e22' },
-            { label: 'Trả hôm nay', value: stats.todayReturns, color: '#9b59b6', hoverColor: '#8e44ad' },
-            { label: 'Quá hạn', value: stats.overdueBooks, color: '#e74c3c', hoverColor: '#c0392b' }
+            { label: 'Trả trong ngày', value: stats.todayReturns, color: '#9b59b6', hoverColor: '#8e44ad' },
+            { label: 'Tổng quá hạn', value: stats.overdueBooks, color: '#e74c3c', hoverColor: '#c0392b' },
+            { label: 'Tổng đã trả', value: stats.totalReturned, color: '#1abc9c', hoverColor: '#16a085' }
         ];
 
         // Calculate chart dimensions with better spacing
@@ -410,8 +414,8 @@ class AdminManager {
 
         const data = [
             { label: 'Đang mượn', value: stats.activeBorrowings, color: '#f39c12' },
-            { label: 'Trả hôm nay', value: stats.todayReturns, color: '#2ecc71' },
-            { label: 'Quá hạn', value: stats.overdueBooks, color: '#e74c3c' }
+            { label: 'Trả trong ngày', value: stats.todayReturns, color: '#2ecc71' },
+            { label: 'Tổng quá hạn', value: stats.overdueBooks, color: '#e74c3c' }
         ];
 
         const total = data.reduce((sum, item) => sum + item.value, 0);
@@ -484,25 +488,40 @@ class AdminManager {
 
         ctx.clearRect(0, 0, width, height);
 
-        // Comparison data
+        // Draw title
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('So sánh các chỉ số hệ thống', width / 2, 30);
+
+        // Comparison data với thông tin chi tiết hơn
         const comparisons = [
             { 
-                label: 'Hiệu suất mượn trả',
+                label: 'Hiệu suất trả sách trong ngày',
                 current: stats.todayReturns,
-                target: stats.activeBorrowings,
-                color: '#9b59b6'
+                target: Math.max(stats.activeBorrowings, 1),
+                color: '#9b59b6',
+                unit: 'cuốn'
             },
             {
-                label: 'Tình trạng quá hạn',
+                label: 'Tỉ lệ sách quá hạn / đang mượn',
                 current: stats.overdueBooks,
                 target: Math.max(stats.activeBorrowings, 1),
-                color: '#e74c3c'
+                color: '#e74c3c',
+                unit: 'cuốn'
+            },
+            {
+                label: 'Tổng sách đã trả / tổng sách',
+                current: stats.totalReturned,
+                target: Math.max(stats.totalBooks, 1),
+                color: '#1abc9c',
+                unit: 'cuốn'
             }
         ];
 
-        const barHeight = 40;
-        const barSpacing = 80;
-        const startY = 60;
+        const barHeight = 30;
+        const barSpacing = 100;
+        const startY = 80;
 
         comparisons.forEach((comp, index) => {
             const y = startY + index * barSpacing;
@@ -531,11 +550,11 @@ class AdminManager {
                 ctx.fillText(`${percentage.toFixed(1)}%`, 50 + barWidth/2, y + 25);
             }
 
-            // Values
+            // Values với đơn vị
             ctx.fillStyle = '#6c757d';
             ctx.font = '12px Arial';
             ctx.textAlign = 'right';
-            ctx.fillText(`${comp.current}/${comp.target}`, width - 10, y + 25);
+            ctx.fillText(`${comp.current}/${comp.target} ${comp.unit}`, width - 10, y + 25);
         });
     }
 
